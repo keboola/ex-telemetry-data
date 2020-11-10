@@ -1,0 +1,5 @@
+Connecting to DSN mysql:host=mysql;port=3306;dbname=test;charset=utf8
+Run query "SELECT * FROM `test`.`non_filtered`"
+Run query "SELECT * FROM `test`.`project_id` WHERE `PROJECT_ID` = '2'"
+Run query "SELECT * FROM `test`.`project_id_stack` WHERE `PROJECT_STACK` = 'connection.north-europe.azure.keboola.com' AND `PROJECT_ID` = '2'"
+Run query "SELECT * FROM `test`.`project_stack` WHERE `PROJECT_STACK` = 'connection.north-europe.azure.keboola.com'"
