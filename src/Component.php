@@ -2,15 +2,40 @@
 
 declare(strict_types=1);
 
-namespace MyComponent;
+namespace Keboola\TelemetryData;
 
 use Keboola\Component\BaseComponent;
+use Keboola\Component\Logger;
+use Keboola\Component\Manifest\ManifestManager;
 
 class Component extends BaseComponent
 {
     protected function run(): void
     {
-        // @TODO implement
+        $extractor = new Extractor(
+            new DbConnector($this->getAppConfig(), $this->getAppLogger()),
+            $this->getAppConfig(),
+            $this->getAppLogger(),
+            new ManifestManager($this->getDataDir()),
+            $this->getDataDir()
+        );
+
+        $extractor->extractData();
+    }
+
+    private function getAppConfig(): Config
+    {
+        /** @var Config $config */
+        $config = $this->getConfig();
+
+        return $config;
+    }
+
+    private function getAppLogger(): Logger
+    {
+        /** @var Logger $logger */
+        $logger = $this->getLogger();
+        return $logger;
     }
 
     protected function getConfigClass(): string
