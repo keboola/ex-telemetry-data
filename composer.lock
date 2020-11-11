@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "db4a4400588b84ca0f2434771bfba2a0",
+    "content-hash": "babd1df88785ba07b62a1aa0135aaea9",
     "packages": [
         {
             "name": "keboola/common-exceptions",
@@ -147,16 +147,16 @@
         },
         {
             "name": "keboola/php-datatypes",
-            "version": "dev-ondra-mysql-array-length",
+            "version": "4.9.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/keboola/php-datatypes.git",
-                "reference": "3a20a701fab58ab49c7e3520ab497e2bc63d5a31"
+                "reference": "c70b78804e49472121a0f3604ef9740c8612beb6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keboola/php-datatypes/zipball/3a20a701fab58ab49c7e3520ab497e2bc63d5a31",
-                "reference": "3a20a701fab58ab49c7e3520ab497e2bc63d5a31",
+                "url": "https://api.github.com/repos/keboola/php-datatypes/zipball/c70b78804e49472121a0f3604ef9740c8612beb6",
+                "reference": "c70b78804e49472121a0f3604ef9740c8612beb6",
                 "shasum": ""
             },
             "require": {
@@ -186,7 +186,7 @@
                 }
             ],
             "description": "PHP datatypes for databases",
-            "time": "2020-11-06T13:58:41+00:00"
+            "time": "2020-11-11T10:55:41+00:00"
         },
         {
             "name": "keboola/retry",
@@ -3139,9 +3139,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "keboola/php-datatypes": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

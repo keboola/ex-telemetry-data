@@ -10,6 +10,12 @@ class Column
 
     public const PROJECT_ID_NAME = 'PROJECT_ID';
 
+    private const TYPE_WITHOUT_LENGTH = [
+        'TEXT',
+        'MEDIUMTEXT',
+        'LONGTEXT',
+    ];
+
     private string $name;
 
     private int $characterMaximumLength;
@@ -100,8 +106,11 @@ class Column
         return $this->dataType;
     }
 
-    public function getLength(): array
+    public function getLength(): ?array
     {
+        if (in_array(strtoupper($this->getDataType()), self::TYPE_WITHOUT_LENGTH)) {
+            return null;
+        }
         return [
             'character_maximum' => $this->getCharacterMaximumLength(),
             'numeric_precision' => $this->getNumericPrecision(),
