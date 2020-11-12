@@ -1,20 +1,33 @@
-# my-component
+# Telemetry data Extractor
 
-[![Build Status](https://travis-ci.com/keboola/my-component.svg?branch=master)](https://travis-ci.com/keboola/my-component)
+[![Build Status](https://travis-ci.com/keboola/ex-telemetry-data.svg?branch=master)](https://travis-ci.com/keboola/ex-telemetry-data)
 
-> Fill in description
+> Exports telemetry data for specified project 
 
 # Usage
 
-> fill in usage instructions
+```json
+{
+  "parameters": {},
+  "image_parameters": {
+    "db": {
+      "host": "XXX",
+      "port": 3306,
+      "user": "XXX",
+      "database": "XXX",
+      "#password": "xxx"
+    }
+  }
+}
+```
 
 ## Development
  
 Clone this repository and init the workspace with following command:
 
 ```
-git clone https://github.com/keboola/my-component
-cd my-component
+git clone https://github.com/keboola/ex-telemetry-data
+cd ex-telemetry-data
 docker-compose build
 docker-compose run --rm dev composer install --no-scripts
 ```
@@ -24,7 +37,3 @@ Run the test suite using this command:
 ```
 docker-compose run --rm dev composer tests
 ```
- 
-# Integration
-
-For information about deployment and integration with KBC, please refer to the [deployment section of developers documentation](https://developers.keboola.com/extend/component/deployment/) 
