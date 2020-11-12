@@ -16,7 +16,7 @@ class Component extends BaseComponent
             new DbConnector($this->getAppConfig(), $this->getAppLogger()),
             $this->getAppConfig(),
             $this->getAppLogger(),
-            new ManifestManager($this->getDataDir()),
+            $this->getManifestManager(),
             $this->getDataDir()
         );
 
