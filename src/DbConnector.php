@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace Keboola\TelemetryData;
 
-use Keboola\Component\Logger;
 use Keboola\TelemetryData\Exception\ApplicationException;
 use Keboola\TelemetryData\ValueObject\Column;
 use Keboola\TelemetryData\ValueObject\Table;
 use \PDO;
 use \PDOException;
 use \PDOStatement;
+use Psr\Log\LoggerInterface;
 
 class DbConnector
 {
     private Config $config;
 
-    private Logger $logger;
+    private LoggerInterface $logger;
 
     private PDO $connection;
 
-    public function __construct(Config $config, Logger $logger)
+    public function __construct(Config $config, LoggerInterface $logger)
     {
         $this->logger = $logger;
         $this->config = $config;

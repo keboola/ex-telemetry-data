@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Keboola\TelemetryData;
 
-use Keboola\Component\Logger;
 use Keboola\Component\Manifest\ManifestManager;
 use Keboola\Component\UserException;
 use Keboola\Csv\CsvWriter;
@@ -13,6 +12,7 @@ use Keboola\Datatype\Definition\GenericStorage;
 use Keboola\Datatype\Definition\MySQL;
 use Keboola\TelemetryData\ValueObject\Column;
 use Keboola\TelemetryData\ValueObject\Table;
+use Psr\Log\LoggerInterface;
 use Retry\BackOff\ExponentialBackOffPolicy;
 use Retry\Policy\SimpleRetryPolicy;
 use Retry\RetryProxy;
@@ -29,7 +29,7 @@ class Extractor
 
     private Config $config;
 
-    private Logger $logger;
+    private LoggerInterface $logger;
 
     private ManifestManager $manifestManager;
 
@@ -38,7 +38,7 @@ class Extractor
     public function __construct(
         DbConnector $dbConnector,
         Config $config,
-        Logger $logger,
+        LoggerInterface $logger,
         ManifestManager $manifestManager,
         string $datadir
     ) {

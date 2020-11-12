@@ -13,9 +13,9 @@ class Component extends BaseComponent
     protected function run(): void
     {
         $extractor = new Extractor(
-            new DbConnector($this->getAppConfig(), $this->getAppLogger()),
+            new DbConnector($this->getAppConfig(), $this->getLogger()),
             $this->getAppConfig(),
-            $this->getAppLogger(),
+            $this->getLogger(),
             $this->getManifestManager(),
             $this->getDataDir()
         );
@@ -29,13 +29,6 @@ class Component extends BaseComponent
         $config = $this->getConfig();
 
         return $config;
-    }
-
-    private function getAppLogger(): Logger
-    {
-        /** @var Logger $logger */
-        $logger = $this->getLogger();
-        return $logger;
     }
 
     protected function getConfigClass(): string
