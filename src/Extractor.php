@@ -55,36 +55,6 @@ class Extractor
 
         /** @var Table $table */
         foreach ($this->dbConnector->getTables() as $table) {
-            $sql = sprintf(
-                'SELECT * FROM %s.%s',
-                $this->dbConnector->quoteIdentifier($table->getSchema()),
-                $this->dbConnector->quoteIdentifier($table->getName())
-            );
-
-            $whereStatement = [];
-            if ($table->hasProjectStackColumn()) {
-                $whereStatement[] = sprintf(
-                    '%s = %s',
-                    $this->dbConnector->quoteIdentifier(Column::PROJECT_STACK_NAME),
-                    $this->dbConnector->quote($this->config->getKbcStackId())
-                );
-            }
-
-            if ($table->hasProjectIdColumn()) {
-                $whereStatement[] = sprintf(
-                    '%s = %s',
-                    $this->dbConnector->quoteIdentifier(Column::PROJECT_ID_NAME),
-                    $this->dbConnector->quote($this->config->getProjectId())
-                );
-            }
-
-            if ($whereStatement) {
-                $sql .= sprintf(
-                    ' WHERE %s',
-                    implode(' AND ', $whereStatement)
-                );
-            }
-
             $retryProxy = new RetryProxy(
                 new SimpleRetryPolicy(
                     Config::RETRY_MAX_ATTEMPTS,
@@ -95,9 +65,10 @@ class Extractor
             );
 
             try {
-                $this->logger->info(sprintf('Run query "%s"', $sql));
-                $result = $retryProxy->call(function () use ($sql, $table) {
-                    $stmt = $this->dbConnector->execute($sql);
+                $result = $retryProxy->call(function () use ($table) {
+                    $stmt = $this->dbConnector->execute(
+                        $this->generateSqlStatement($table)
+                    );
                     $csv = $this->createOutputCsvFile($table);
                     return $this->writeDataToCsv($stmt, $csv);
                 });
@@ -114,6 +85,41 @@ class Extractor
         }
 
         $this->createManifestMetadata($tableNamesForManifest);
+    }
+
+    private function generateSqlStatement(Table $table): string
+    {
+        $sql = sprintf(
+            'SELECT * FROM %s.%s',
+            $this->dbConnector->quoteIdentifier($table->getSchema()),
+            $this->dbConnector->quoteIdentifier($table->getName())
+        );
+
+        $whereStatement = [];
+        if ($table->hasProjectStackColumn()) {
+            $whereStatement[] = sprintf(
+                '%s = %s',
+                $this->dbConnector->quoteIdentifier(Column::PROJECT_STACK_NAME),
+                $this->dbConnector->quote($this->config->getKbcStackId())
+            );
+        }
+
+        if ($table->hasProjectIdColumn()) {
+            $whereStatement[] = sprintf(
+                '%s = %s',
+                $this->dbConnector->quoteIdentifier(Column::PROJECT_ID_NAME),
+                $this->dbConnector->quote($this->config->getProjectId())
+            );
+        }
+
+        if ($whereStatement) {
+            $sql .= sprintf(
+                ' WHERE %s',
+                implode(' AND ', $whereStatement)
+            );
+        }
+
+        return $sql;
     }
 
     private function createManifestMetadata(array $tableNames): void

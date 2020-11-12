@@ -149,6 +149,7 @@ class DbConnector
 
     public function execute(string $sql): PDOStatement
     {
+        $this->logger->info(sprintf('Run query "%s"', $sql));
         $stmt = $this->connection->prepare($sql);
         $stmt->execute();
         return $stmt;
