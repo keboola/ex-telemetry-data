@@ -13,6 +13,8 @@ before_script:
 script:
   - docker-compose run --rm wait
   - docker-compose run --rm app composer ci
+  # run test job inside KBC
+  - docker run --rm -e KBC_STORAGE_TOKEN quay.io/keboola/syrup-cli:latest run-job $KBC_DEVELOPERPORTAL_APP $KBC_APP_TEST_CONFIG_ID test
 
 after_script:
   # push test image to ECR
