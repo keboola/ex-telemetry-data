@@ -134,6 +134,19 @@ class DbConnector
 
             $tables[$tableId]->addColumn($columnObject);
         }
+
+        foreach ($tables as $tableId => $table) {
+            $missingColumns = $table->missingRequiredColumns();
+            if ($missingColumns) {
+                unset($tables[$tableId]);
+                $this->logger->info(sprintf(
+                    'Missing "%s" columns for table "%s".',
+                    implode(', ', $missingColumns),
+                    $table->getName()
+                ));
+            }
+        }
+
         return $tables;
     }
 

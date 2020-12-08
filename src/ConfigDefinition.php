@@ -16,8 +16,9 @@ class ConfigDefinition extends BaseConfigDefinition
         /** @noinspection NullPointerExceptionInspection */
         $parametersNode
             ->children()
-                ->scalarNode('foo')
-                    ->defaultValue('baz')
+                ->enumNode('mode')
+                    ->values([Config::MODE_PROJECT, Config::MODE_ORGANIZATION])
+                    ->defaultValue(Config::MODE_PROJECT)
                 ->end()
             ->end()
         ;

@@ -96,28 +96,34 @@ class Extractor
         );
 
         $whereStatement = [];
-        if ($table->hasProjectStackColumn()) {
-            $whereStatement[] = sprintf(
-                '%s = %s',
-                $this->dbConnector->quoteIdentifier(Column::PROJECT_STACK_NAME),
-                $this->dbConnector->quote($this->config->getKbcStackId())
-            );
+        switch ($this->config->getMode()) {
+            case Config::MODE_PROJECT:
+                $projectColumnName = Column::PROJECT_SINGLE_NAME;
+                $stackColumnName = Column::STACK_SINGLE_NAME;
+                break;
+            case Config::MODE_ORGANIZATION:
+                $projectColumnName = Column::PROJECT_COMPANY_NAME;
+                $stackColumnName = Column::STACK_COMPANY_NAME;
+                break;
+            default:
+                throw new UserException(sprintf('Unknown mode "%s".', $this->config->getMode()));
         }
 
-        if ($table->hasProjectIdColumn()) {
-            $whereStatement[] = sprintf(
-                '%s = %s',
-                $this->dbConnector->quoteIdentifier(Column::PROJECT_ID_NAME),
-                $this->dbConnector->quote($this->config->getProjectId())
-            );
-        }
+        $whereStatement[] = sprintf(
+            '%s = %s',
+            $this->dbConnector->quoteIdentifier($projectColumnName),
+            $this->dbConnector->quote($this->config->getProjectId())
+        );
+        $whereStatement[] = sprintf(
+            '%s = %s',
+            $this->dbConnector->quoteIdentifier($stackColumnName),
+            $this->dbConnector->quote($this->config->getKbcStackId())
+        );
 
-        if ($whereStatement) {
-            $sql .= sprintf(
-                ' WHERE %s',
-                implode(' AND ', $whereStatement)
-            );
-        }
+        $sql .= sprintf(
+            ' WHERE %s',
+            implode(' AND ', $whereStatement)
+        );
 
         return $sql;
     }

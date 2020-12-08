@@ -6,9 +6,15 @@ namespace Keboola\TelemetryData\ValueObject;
 
 class Column
 {
-    public const PROJECT_STACK_NAME = 'PROJECT_STACK';
+    public const PROJECT_SINGLE_NAME = 'dst_proj_single';
 
-    public const PROJECT_ID_NAME = 'PROJECT_ID';
+    public const STACK_SINGLE_NAME = 'dst_stack_single';
+
+    public const PROJECT_COMPANY_NAME = 'dst_proj_company';
+
+    public const STACK_COMPANY_NAME = 'dst_stack_company';
+
+    public const TIMESTAMP_NAME = 'dst_timestamp';
 
     private const TYPE_WITHOUT_LENGTH = [
         'TEXT',
