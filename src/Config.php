@@ -13,6 +13,10 @@ class Config extends BaseConfig
 
     public const RETRY_DEFAULT_BACKOFF_INTERVAL = 1000;
 
+    public const MODE_PROJECT = 'project';
+
+    public const MODE_ORGANIZATION = 'organization';
+
     public function getProjectId(): string
     {
         $projectId = getenv('KBC_PROJECTID');
@@ -22,22 +26,9 @@ class Config extends BaseConfig
         return $projectId;
     }
 
-    public function getKbcToken(): string
+    public function getMode(): string
     {
-        $token = getenv('KBC_TOKEN');
-        if (!$token) {
-            throw new UserException('Cannot find "KBC_TOKEN" environment.');
-        }
-        return $token;
-    }
-
-    public function getKbcUrl(): string
-    {
-        $url = getenv('KBC_URL');
-        if (!$url) {
-            throw new UserException('Cannot find "KBC_URL" environment.');
-        }
-        return $url;
+        return $this->getValue(['parameters', 'mode']);
     }
 
     public function getKbcStackId(): string
