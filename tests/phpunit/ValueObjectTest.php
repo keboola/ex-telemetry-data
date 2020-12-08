@@ -95,7 +95,7 @@ class ValueObjectTest extends TestCase
                 Column::STACK_COMPANY_NAME,
                 Column::STACK_SINGLE_NAME,
                 Column::PROJECT_COMPANY_NAME,
-                Column::TIMESTAMP_NAME,
+                Column::INCREMENTAL_NAME,
             ],
             ['dst_proj_single'],
         ];
@@ -104,7 +104,7 @@ class ValueObjectTest extends TestCase
                 Column::STACK_COMPANY_NAME,
                 Column::STACK_SINGLE_NAME,
                 Column::PROJECT_SINGLE_NAME,
-                Column::TIMESTAMP_NAME,
+                Column::INCREMENTAL_NAME,
             ],
             ['dst_proj_company'],
         ];
@@ -113,7 +113,7 @@ class ValueObjectTest extends TestCase
                 Column::STACK_COMPANY_NAME,
                 Column::PROJECT_COMPANY_NAME,
                 Column::PROJECT_SINGLE_NAME,
-                Column::TIMESTAMP_NAME,
+                Column::INCREMENTAL_NAME,
             ],
             ['dst_stack_single'],
         ];
@@ -122,7 +122,7 @@ class ValueObjectTest extends TestCase
                 Column::STACK_SINGLE_NAME,
                 Column::PROJECT_COMPANY_NAME,
                 Column::PROJECT_SINGLE_NAME,
-                Column::TIMESTAMP_NAME,
+                Column::INCREMENTAL_NAME,
             ],
             ['dst_stack_company'],
         ];

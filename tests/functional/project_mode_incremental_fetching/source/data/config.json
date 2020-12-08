@@ -1,0 +1,15 @@
+{
+  "parameters": {
+    "mode": "project",
+    "incrementalFetching": true
+  },
+  "image_parameters": {
+    "db": {
+      "host": "%env(string:MYSQL_DB_HOST)%",
+      "port": "%env(int:MYSQL_DB_PORT)%",
+      "user": "%env(string:MYSQL_DB_USER)%",
+      "database": "%env(string:MYSQL_DB_DATABASE)%",
+      "#password": "%env(string:MYSQL_DB_PASSWORD)%"
+    }
+  }
+}
