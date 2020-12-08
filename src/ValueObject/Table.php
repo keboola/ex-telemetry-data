@@ -55,7 +55,7 @@ class Table
         return $this->columns;
     }
 
-    public function missingRequiredColumns(): array
+    public function getMissingRequiredColumns(): array
     {
         return array_values(array_diff(
             $this->requiredTableColumns,

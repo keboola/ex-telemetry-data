@@ -136,7 +136,7 @@ class DbConnector
         }
 
         foreach ($tables as $tableId => $table) {
-            $missingColumns = $table->missingRequiredColumns();
+            $missingColumns = $table->getMissingRequiredColumns();
             if ($missingColumns) {
                 unset($tables[$tableId]);
                 $this->logger->info(sprintf(

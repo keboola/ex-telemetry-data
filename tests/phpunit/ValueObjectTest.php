@@ -41,7 +41,7 @@ class ValueObjectTest extends TestCase
             $table->addColumn($column);
         }
 
-        Assert::assertEquals($missingColumns, $table->missingRequiredColumns());
+        Assert::assertEquals($missingColumns, $table->getMissingRequiredColumns());
     }
 
     public function testColumnObject(): void
