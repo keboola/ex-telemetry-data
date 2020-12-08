@@ -35,21 +35,27 @@ class Extractor
 
     private string $datadir;
 
+    private array $inputState;
+
+    private ?array $lastRow = null;
+
     public function __construct(
         DbConnector $dbConnector,
         Config $config,
         LoggerInterface $logger,
         ManifestManager $manifestManager,
-        string $datadir
+        string $datadir,
+        array $inputState
     ) {
         $this->dbConnector = $dbConnector;
         $this->config = $config;
         $this->logger = $logger;
         $this->datadir = $datadir;
         $this->manifestManager = $manifestManager;
+        $this->inputState = $inputState;
     }
 
-    public function extractData(): void
+    public function extractData(): array
     {
         $tableNamesForManifest = [];
 
@@ -83,8 +89,15 @@ class Extractor
                 $this->removeEmptyFile($table);
             }
         }
-
         $this->createManifestMetadata($tableNamesForManifest);
+
+        if ($this->config->isIncrementalFetching() && $this->lastRow) {
+            return [
+                Config::STATE_INCREMENTAL_KEY => $this->lastRow[Column::INCREMENTAL_NAME],
+            ];
+        }
+
+        return [];
     }
 
     private function generateSqlStatement(Table $table): string
@@ -96,6 +109,7 @@ class Extractor
         );
 
         $whereStatement = [];
+        $orderStatement = '';
         switch ($this->config->getMode()) {
             case Config::MODE_PROJECT:
                 $projectColumnName = Column::PROJECT_SINGLE_NAME;
@@ -120,10 +134,25 @@ class Extractor
             $this->dbConnector->quote($this->config->getKbcStackId())
         );
 
+        if ($this->config->isIncrementalFetching()) {
+            if (isset($this->inputState['lastFetchedValue'])) {
+                $whereStatement[] = sprintf(
+                    '%s >= %s',
+                    $this->dbConnector->quoteIdentifier(Column::INCREMENTAL_NAME),
+                    $this->dbConnector->quote($this->inputState['lastFetchedValue'])
+                );
+            }
+            $orderStatement = $this->dbConnector->quoteIdentifier(Column::INCREMENTAL_NAME);
+        }
+
         $sql .= sprintf(
             ' WHERE %s',
             implode(' AND ', $whereStatement)
         );
+
+        if ($orderStatement) {
+            $sql .= ' ORDER BY ' . $orderStatement;
+        }
 
         return $sql;
     }
@@ -182,6 +211,7 @@ class Extractor
         ];
         while ($row = $statement->fetch(PDO::FETCH_ASSOC)) {
             $csvWriter->writeRow($row);
+            $this->lastRow = $row;
             $result['rows']++;
         }
         return $result;
