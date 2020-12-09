@@ -1,0 +1,2 @@
+Connecting to DSN mysql:host=mysql;port=3306;dbname=test;charset=utf8
+Run query "SELECT * FROM `test`.`data` WHERE `dst_proj_company` = '2' AND `dst_stack_company` = 'connection.north-europe.azure.keboola.com' AND `dst_timestamp` >= '2020-12-01 18:09:10' ORDER BY `dst_timestamp`"

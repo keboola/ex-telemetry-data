@@ -17,10 +17,19 @@ class Component extends BaseComponent
             $this->getAppConfig(),
             $this->getLogger(),
             $this->getManifestManager(),
-            $this->getDataDir()
+            $this->getDataDir(),
+            $this->getInputState()
         );
 
-        $extractor->extractData();
+        $result = $extractor->extractData();
+
+        if (isset($result[Config::STATE_INCREMENTAL_KEY])) {
+            $this->writeOutputStateToFile(
+                [Config::STATE_INCREMENTAL_KEY => $result[Config::STATE_INCREMENTAL_KEY]]
+            );
+        } elseif (isset($this->getInputState()[Config::STATE_INCREMENTAL_KEY])) {
+            $this->writeOutputStateToFile($this->getInputState());
+        }
     }
 
     private function getAppConfig(): Config

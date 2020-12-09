@@ -17,6 +17,8 @@ class Config extends BaseConfig
 
     public const MODE_ORGANIZATION = 'organization';
 
+    public const STATE_INCREMENTAL_KEY = 'lastFetchedValue';
+
     public function getProjectId(): string
     {
         $projectId = getenv('KBC_PROJECTID');
@@ -68,5 +70,10 @@ class Config extends BaseConfig
     {
         $imageParameters = $this->getImageParameters();
         return $imageParameters['db']['database'];
+    }
+
+    public function isIncrementalFetching(): bool
+    {
+        return (bool) $this->getValue(['parameters', 'incrementalFetching']);
     }
 }

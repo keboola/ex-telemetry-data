@@ -14,7 +14,7 @@ class Column
 
     public const STACK_COMPANY_NAME = 'dst_stack_company';
 
-    public const TIMESTAMP_NAME = 'dst_timestamp';
+    public const INCREMENTAL_NAME = 'dst_timestamp';
 
     private const TYPE_WITHOUT_LENGTH = [
         'TEXT',

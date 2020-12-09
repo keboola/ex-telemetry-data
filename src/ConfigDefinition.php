@@ -20,6 +20,7 @@ class ConfigDefinition extends BaseConfigDefinition
                     ->values([Config::MODE_PROJECT, Config::MODE_ORGANIZATION])
                     ->defaultValue(Config::MODE_PROJECT)
                 ->end()
+                ->booleanNode('incrementalFetching')->defaultFalse()->end()
             ->end()
         ;
         // @formatter:on
