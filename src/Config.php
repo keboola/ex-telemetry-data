@@ -76,4 +76,9 @@ class Config extends BaseConfig
     {
         return (bool) $this->getValue(['parameters', 'incrementalFetching']);
     }
+
+    public function isIncremental(): bool
+    {
+        return (bool) $this->getValue(['parameters', 'incremental']);
+    }
 }

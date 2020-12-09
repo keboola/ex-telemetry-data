@@ -45,37 +45,37 @@ class ConfigTest extends TestCase
     {
         yield [
             [],
-            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => false],
+            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => false, 'incremental' => false],
         ];
 
         yield [
             ['incrementalFetching' => false],
-            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => false],
+            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => false, 'incremental' => false],
         ];
 
         yield [
             ['incrementalFetching' => true],
-            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => true],
+            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => true, 'incremental' => false],
         ];
 
         yield [
             ['mode' => Config::MODE_PROJECT],
-            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => false],
+            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => false, 'incremental' => false],
         ];
 
         yield [
             ['mode' => Config::MODE_ORGANIZATION],
-            ['mode' => Config::MODE_ORGANIZATION, 'incrementalFetching' => false],
+            ['mode' => Config::MODE_ORGANIZATION, 'incrementalFetching' => false, 'incremental' => false],
         ];
 
         yield [
-            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => true],
-            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => true],
+            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => true, 'incremental' => false],
+            ['mode' => Config::MODE_PROJECT, 'incrementalFetching' => true, 'incremental' => false],
         ];
 
         yield [
-            ['mode' => Config::MODE_ORGANIZATION, 'incrementalFetching' => true],
-            ['mode' => Config::MODE_ORGANIZATION, 'incrementalFetching' => true],
+            ['mode' => Config::MODE_ORGANIZATION, 'incrementalFetching' => true, 'incremental' => true],
+            ['mode' => Config::MODE_ORGANIZATION, 'incrementalFetching' => true, 'incremental' => true],
         ];
     }
 }

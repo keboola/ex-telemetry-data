@@ -193,6 +193,7 @@ class Extractor
 
             $tableManifestOptions = new OutTableManifestOptions();
             $tableManifestOptions
+                ->setIncremental($this->config->isIncremental())
                 ->setMetadata($tableMetadata)
                 ->setColumns($columnNames)
                 ->setColumnMetadata($columnsMetadata)
