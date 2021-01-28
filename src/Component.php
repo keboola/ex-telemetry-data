@@ -23,11 +23,9 @@ class Component extends BaseComponent
 
         $result = $extractor->extractData();
 
-        if (isset($result[Config::STATE_INCREMENTAL_KEY])) {
-            $this->writeOutputStateToFile(
-                [Config::STATE_INCREMENTAL_KEY => $result[Config::STATE_INCREMENTAL_KEY]]
-            );
-        } elseif (isset($this->getInputState()[Config::STATE_INCREMENTAL_KEY])) {
+        if (!empty($result)) {
+            $this->writeOutputStateToFile($result);
+        } elseif (!empty($this->getInputState())) {
             $this->writeOutputStateToFile($this->getInputState());
         }
     }

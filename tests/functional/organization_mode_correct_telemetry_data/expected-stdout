@@ -1,2 +1,3 @@
-Connecting to DSN mysql:host=mysql;port=3306;dbname=test;charset=utf8
-Run query "SELECT * FROM `test`.`data` WHERE `dst_proj_company` = '2' AND `dst_stack_company` = 'connection.north-europe.azure.keboola.com'"
+Exporting to "data"
+Run query "SELECT * FROM "telemetry_data"."data" WHERE "dst_proj_company" = '2' AND "dst_stack_company" = 'connection.north-europe.azure.keboola.com'"
+Downloading data from Snowflake
