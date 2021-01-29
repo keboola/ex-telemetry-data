@@ -7,33 +7,35 @@ namespace Keboola\TelemetryData\FunctionalTests;
 use Keboola\Csv\CsvReader;
 use Keboola\DatadirTests\DatadirTestCase;
 use Keboola\DatadirTests\DatadirTestSpecificationInterface;
-use Keboola\TelemetryData\Exception\ApplicationException;
+use Keboola\SnowflakeDbAdapter\Connection;
+use Keboola\SnowflakeDbAdapter\QueryBuilder;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
-use \PDO;
+use Symfony\Component\Process\Process;
+use Throwable;
 
 class DatadirTest extends DatadirTestCase
 {
-    private PDO $connection;
+    private Connection $connection;
 
     public function setUp(): void
     {
-        $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // convert errors to PDOExceptions
-        ];
-
-        $this->connection = new PDO(
-            sprintf(
-                'mysql:host=%s;port=%s;dbname=%s;charset=utf8',
-                getenv('MYSQL_DB_HOST'),
-                getenv('MYSQL_DB_PORT'),
-                getenv('MYSQL_DB_DATABASE')
-            ),
-            (string) getenv('MYSQL_DB_USER'),
-            (string) getenv('MYSQL_DB_PASSWORD'),
-            $options
+        $this->connection = new Connection(
+            [
+                'host' => getenv('SNOWFLAKE_DB_HOST'),
+                'user' => getenv('SNOWFLAKE_DB_USER'),
+                'password' => getenv('SNOWFLAKE_DB_PASSWORD'),
+                'port' => getenv('SNOWFLAKE_DB_PORT'),
+                'database' => getenv('SNOWFLAKE_DB_DATABASE'),
+                'warehouse' => getenv('SNOWFLAKE_DB_WAREHOUSE'),
+            ]
         );
-
-        $this->connection->exec('SET NAMES utf8mb4;');
+        $this->connection->query(
+            sprintf(
+                'USE SCHEMA %s',
+                QueryBuilder::quoteIdentifier((string) getenv('SNOWFLAKE_DB_SCHEMA'))
+            )
+        );
         parent::setUp();
     }
 
@@ -52,32 +54,24 @@ class DatadirTest extends DatadirTestCase
         $this->assertMatchesSpecification($specification, $process, $tempDatadir->getTmpFolder());
     }
 
+    public function assertDirectoryContentsSame(string $expected, string $actual): void
+    {
+        $this->prettifyAllManifests($actual);
+        $this->ungzipFiles($actual);
+        parent::assertDirectoryContentsSame($expected, $actual);
+    }
+
     private function cleanDatabase(): void
     {
-        $whereStatement = [
-            sprintf(
-                'LOWER(`TABLE_SCHEMA`) = \'%s\'',
-                getenv('MYSQL_DB_DATABASE')
-            ),
-        ];
+        $sql = 'SHOW TABLES IN SCHEMA';
 
-        $sql = sprintf(
-            'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE %s',
-            implode(' AND ', $whereStatement)
-        );
-
-        $stmt = $this->connection->query($sql);
-        if (!$stmt) {
-            throw new ApplicationException('Get tables failed.');
-        }
-
-        $items = (array) $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = $this->connection->fetchAll($sql);
         foreach ($items as $item) {
             $this->connection->query(
                 sprintf(
-                    'DROP TABLE IF EXISTS `%s`.`%s`',
-                    $item['TABLE_SCHEMA'],
-                    $item['TABLE_NAME']
+                    'DROP TABLE IF EXISTS %s.%s',
+                    QueryBuilder::quoteIdentifier($item['schema_name']),
+                    QueryBuilder::quoteIdentifier($item['name'])
                 )
             );
         }
@@ -103,26 +97,26 @@ class DatadirTest extends DatadirTestCase
             $columns = [];
             foreach ($fileContent['columns'] as $column) {
                 $columns[] = sprintf(
-                    '`%s` VARCHAR(512)',
-                    $column
+                    '%s VARCHAR(512)',
+                    QueryBuilder::quoteIdentifier($column)
                 );
             }
 
             $sqlTemplate = <<<SQL
-CREATE TABLE `%s` (
+CREATE TABLE %s (
     %s
 );
 SQL;
             $sql = sprintf(
                 $sqlTemplate,
-                $databaseTableName,
+                QueryBuilder::quoteIdentifier($databaseTableName),
                 implode(',', $columns)
             );
 
             $this->connection->query($sql);
 
             $sqlInsertTemplate = <<<SQL
-INSERT INTO `%s` VALUES (%s);
+INSERT INTO %s VALUES (%s);
 SQL;
 
             $csvReader = new CsvReader(substr(
@@ -133,12 +127,12 @@ SQL;
 
             while ($csvReader->current()) {
                 $row = array_map(function ($item) {
-                    return $this->connection->quote($item);
+                    return QueryBuilder::quote($item);
                 }, $csvReader->current());
 
                 $sqlInsert = sprintf(
                     $sqlInsertTemplate,
-                    $databaseTableName,
+                    QueryBuilder::quoteIdentifier($databaseTableName),
                     implode(', ', $row)
                 );
 
@@ -146,5 +140,48 @@ SQL;
                 $csvReader->next();
             }
         }
+    }
+
+    protected function prettifyAllManifests(string $actual): void
+    {
+        foreach ($this->findManifests($actual . '/tables') as $file) {
+            $this->prettifyJsonFile((string) $file->getRealPath());
+        }
+    }
+
+    protected function prettifyJsonFile(string $path): void
+    {
+        $json = (string) file_get_contents($path);
+        try {
+            file_put_contents($path, (string) json_encode(json_decode($json), JSON_PRETTY_PRINT));
+        } catch (Throwable $e) {
+            // If a problem occurs, preserve the original contents
+            file_put_contents($path, $json);
+        }
+    }
+
+    protected function findManifests(string $dir): Finder
+    {
+        $finder = new Finder();
+        return $finder->files()->in($dir)->name(['~.*\.manifest~']);
+    }
+
+    protected function ungzipFiles(string $actualDir): void
+    {
+        $fs = new Filesystem();
+        if (!$fs->exists($actualDir . '/tables')) {
+            return;
+        }
+        $gzipFiles = $this->findGzipFiles($actualDir . '/tables');
+        foreach ($gzipFiles as $gzipFile) {
+            $process = Process::fromShellCommandline('gzip -d ' . $gzipFile->getRealPath());
+            $process->run();
+        }
+    }
+
+    private function findGzipFiles(string $dir): Finder
+    {
+        $finder = new Finder();
+        return $finder->files()->in($dir)->depth(1)->name(['~.*\.csv.gz$~']);
     }
 }
