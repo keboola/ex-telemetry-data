@@ -7,7 +7,6 @@ namespace Keboola\TelemetryData;
 use Keboola\Component\Manifest\ManifestManager;
 use Keboola\Component\UserException;
 use Keboola\Csv\CsvOptions;
-use Keboola\Csv\CsvWriter;
 use Keboola\Datatype\Definition\Exception\InvalidTypeException;
 use Keboola\Datatype\Definition\GenericStorage;
 use Keboola\Datatype\Definition\MySQL;
@@ -19,12 +18,10 @@ use Psr\Log\LoggerInterface;
 use Retry\BackOff\ExponentialBackOffPolicy;
 use Retry\Policy\SimpleRetryPolicy;
 use Retry\RetryProxy;
-use \PDOException;
-use \PDOStatement;
-use \PDO;
 use Symfony\Component\Filesystem\Filesystem;
 use Keboola\Component\Manifest\ManifestManager\Options\OutTableManifestOptions;
 use Symfony\Component\Process\Process;
+use Throwable;
 
 class Extractor
 {
@@ -70,7 +67,7 @@ class Extractor
                 $rows = $retryProxy->call(function () use ($table) {
                     return $this->exportAndDownloadData($table);
                 });
-            } catch (PDOException $e) {
+            } catch (Throwable $e) {
                 $message = sprintf('DB query failed: %s', $e->getMessage());
                 throw new UserException($message, 0, $e);
             }

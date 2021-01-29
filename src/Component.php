@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Keboola\TelemetryData;
 
 use Keboola\Component\BaseComponent;
-use Keboola\Component\Logger;
-use Keboola\Component\Manifest\ManifestManager;
 
 class Component extends BaseComponent
 {
