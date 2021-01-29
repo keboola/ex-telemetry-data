@@ -212,7 +212,7 @@ class Extractor
                 ->setColumnMetadata($columnsMetadata)
             ;
             $this->manifestManager->writeTableManifest(
-                sprintf('%s.csv.gz', $tableStructure->getName()),
+                sprintf('%s.csv', $tableStructure->getName()),
                 $tableManifestOptions
             );
         }
@@ -234,7 +234,7 @@ class Extractor
             return 0;
         }
 
-        $outputDataDir = $this->datadir . '/out/tables/' . $table->getName() . '.csv.gz';
+        $outputDataDir = $this->datadir . '/out/tables/' . $table->getName() . '.csv';
         if (!is_dir($outputDataDir)) {
             mkdir($outputDataDir, 0755, true);
         }
