@@ -6,21 +6,22 @@ namespace Keboola\TelemetryData;
 
 use Keboola\Component\Manifest\ManifestManager;
 use Keboola\Component\UserException;
-use Keboola\Csv\CsvWriter;
+use Keboola\Csv\CsvOptions;
 use Keboola\Datatype\Definition\Exception\InvalidTypeException;
 use Keboola\Datatype\Definition\GenericStorage;
 use Keboola\Datatype\Definition\MySQL;
+use Keboola\SnowflakeDbAdapter\QueryBuilder;
 use Keboola\TelemetryData\ValueObject\Column;
 use Keboola\TelemetryData\ValueObject\Table;
+use Keboola\Temp\Temp;
 use Psr\Log\LoggerInterface;
 use Retry\BackOff\ExponentialBackOffPolicy;
 use Retry\Policy\SimpleRetryPolicy;
 use Retry\RetryProxy;
-use \PDOException;
-use \PDOStatement;
-use \PDO;
 use Symfony\Component\Filesystem\Filesystem;
 use Keboola\Component\Manifest\ManifestManager\Options\OutTableManifestOptions;
+use Symfony\Component\Process\Process;
+use Throwable;
 
 class Extractor
 {
@@ -36,8 +37,6 @@ class Extractor
     private string $datadir;
 
     private array $inputState;
-
-    private ?array $lastRow = null;
 
     public function __construct(
         DbConnector $dbConnector,
@@ -58,54 +57,63 @@ class Extractor
     public function extractData(): array
     {
         $tableNamesForManifest = [];
+        $result = [];
 
         /** @var Table $table */
         foreach ($this->dbConnector->getTables() as $table) {
-            $retryProxy = new RetryProxy(
-                new SimpleRetryPolicy(
-                    Config::RETRY_MAX_ATTEMPTS,
-                    ['Exception', 'ErrorExceptions', 'PDOException']
-                ),
-                new ExponentialBackOffPolicy(Config::RETRY_DEFAULT_BACKOFF_INTERVAL),
-                $this->logger
-            );
-
+            $this->logger->info(sprintf('Exporting to "%s"', $table->getName()));
+            $retryProxy = $this->getRetryProxy();
             try {
-                $result = $retryProxy->call(function () use ($table) {
-                    $stmt = $this->dbConnector->execute(
-                        $this->generateSqlStatement($table)
-                    );
-                    $csv = $this->createOutputCsvFile($table);
-                    return $this->writeDataToCsv($stmt, $csv);
+                $rows = $retryProxy->call(function () use ($table) {
+                    return $this->exportAndDownloadData($table);
                 });
-            } catch (PDOException $e) {
+            } catch (Throwable $e) {
                 $message = sprintf('DB query failed: %s', $e->getMessage());
                 throw new UserException($message, 0, $e);
             }
 
-            if ($result['rows'] > 0) {
+            if ($this->config->isIncrementalFetching()) {
+                $lastRow = $this->getLastRow($table);
+                if ($lastRow) {
+                    $result[$table->getName()] = [
+                        Config::STATE_INCREMENTAL_KEY => $lastRow[Column::INCREMENTAL_NAME],
+                    ];
+                }
+            }
+
+            if ($rows > 0) {
                 $tableNamesForManifest[] = $table;
             } else {
                 $this->removeEmptyFile($table);
             }
         }
         $this->createManifestMetadata($tableNamesForManifest);
+        return $result;
+    }
 
-        if ($this->config->isIncrementalFetching() && $this->lastRow) {
-            return [
-                Config::STATE_INCREMENTAL_KEY => $this->lastRow[Column::INCREMENTAL_NAME],
-            ];
-        }
+    private function getLastRow(Table $table): ?array
+    {
+        $sql = sprintf(
+            'SELECT %s FROM %s.%s ORDER BY %s DESC LIMIT 1',
+            QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME),
+            QueryBuilder::quoteIdentifier($table->getSchema()),
+            QueryBuilder::quoteIdentifier($table->getName()),
+            QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME)
+        );
 
-        return [];
+        $resultLastRow = $this->getRetryProxy()->call(function () use ($sql) {
+            return $this->dbConnector->fetchAll($sql);
+        });
+
+        return $resultLastRow[0] ?? null;
     }
 
     private function generateSqlStatement(Table $table): string
     {
         $sql = sprintf(
             'SELECT * FROM %s.%s',
-            $this->dbConnector->quoteIdentifier($table->getSchema()),
-            $this->dbConnector->quoteIdentifier($table->getName())
+            QueryBuilder::quoteIdentifier($table->getSchema()),
+            QueryBuilder::quoteIdentifier($table->getName())
         );
 
         $whereStatement = [];
@@ -125,24 +133,24 @@ class Extractor
 
         $whereStatement[] = sprintf(
             '%s = %s',
-            $this->dbConnector->quoteIdentifier($projectColumnName),
-            $this->dbConnector->quote($this->config->getProjectId())
+            QueryBuilder::quoteIdentifier($projectColumnName),
+            QueryBuilder::quote($this->config->getProjectId())
         );
         $whereStatement[] = sprintf(
             '%s = %s',
-            $this->dbConnector->quoteIdentifier($stackColumnName),
-            $this->dbConnector->quote($this->config->getKbcStackId())
+            QueryBuilder::quoteIdentifier($stackColumnName),
+            QueryBuilder::quote($this->config->getKbcStackId())
         );
 
         if ($this->config->isIncrementalFetching()) {
-            if (isset($this->inputState['lastFetchedValue'])) {
+            if (isset($this->inputState[$table->getName()]['lastFetchedValue'])) {
                 $whereStatement[] = sprintf(
                     '%s >= %s',
-                    $this->dbConnector->quoteIdentifier(Column::INCREMENTAL_NAME),
-                    $this->dbConnector->quote($this->inputState['lastFetchedValue'])
+                    QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME),
+                    QueryBuilder::quote($this->inputState[$table->getName()]['lastFetchedValue'])
                 );
             }
-            $orderStatement = $this->dbConnector->quoteIdentifier(Column::INCREMENTAL_NAME);
+            $orderStatement = QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME);
         }
 
         $sql .= sprintf(
@@ -153,6 +161,11 @@ class Extractor
         if ($orderStatement) {
             $sql .= ' ORDER BY ' . $orderStatement;
         }
+
+        $this->logger->info(sprintf(
+            'Run query "%s"',
+            $sql
+        ));
 
         return $sql;
     }
@@ -194,6 +207,7 @@ class Extractor
             $tableManifestOptions = new OutTableManifestOptions();
             $tableManifestOptions
                 ->setIncremental($this->config->isIncremental())
+                ->setDestination($tableStructure->getName())
                 ->setMetadata($tableMetadata)
                 ->setColumns($columnNames)
                 ->setColumnMetadata($columnsMetadata)
@@ -205,17 +219,68 @@ class Extractor
         }
     }
 
-    private function writeDataToCsv(PDOStatement $statement, CsvWriter $csvWriter): array
+    private function exportAndDownloadData(Table $table): int
     {
-        $result = [
-            'rows' => 0,
-        ];
-        while ($row = $statement->fetch(PDO::FETCH_ASSOC)) {
-            $csvWriter->writeRow($row);
-            $this->lastRow = $row;
-            $result['rows']++;
+        $copyCommand = $this->generateCopyCommand(
+            $table->getName(),
+            $this->generateSqlStatement($table)
+        );
+
+        $result = $this->getRetryProxy()->call(function () use ($copyCommand) {
+            return $this->dbConnector->fetchAll($copyCommand);
+        });
+
+        $rowCount = (int) ($result[0]['rows_unloaded'] ?? 0);
+        if ($rowCount === 0) {
+            return 0;
         }
-        return $result;
+
+        $outputDataDir = $this->datadir . '/out/tables/' . $table->getName() . '.csv';
+        if (!is_dir($outputDataDir)) {
+            mkdir($outputDataDir, 0755, true);
+        }
+
+        $this->logger->info('Downloading data from Snowflake');
+
+        $sqls = [];
+        $sqls[] = sprintf('USE WAREHOUSE %s;', QueryBuilder::quoteIdentifier($this->config->getDbWarehouse()));
+        $sqls[] = sprintf('USE DATABASE %s;', QueryBuilder::quoteIdentifier($this->config->getDbDatabase()));
+        $sqls[] = sprintf(
+            'USE SCHEMA %s.%s;',
+            QueryBuilder::quoteIdentifier($this->config->getDbDatabase()),
+            QueryBuilder::quoteIdentifier($this->config->getDbSchema())
+        );
+        $sqls[] = sprintf(
+            'GET @~/%s file://%s;',
+            $table->getName(),
+            $outputDataDir
+        );
+
+        $snowSqlFile = (new Temp())->createTmpFile('snowsql.sql');
+        file_put_contents($snowSqlFile->getPathname(), implode("\n", $sqls));
+
+        $command = sprintf(
+            'snowsql --noup --config %s -c downloader -f %s',
+            $this->dbConnector->getSnowSqlConfigFile(),
+            $snowSqlFile
+        );
+
+        $process = Process::fromShellCommandline($command);
+        $process->setTimeout(null);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            $this->logger->error(sprintf('Snowsql error, process output %s', $process->getOutput()));
+            $this->logger->error(sprintf('Snowsql error: %s', $process->getErrorOutput()));
+            throw new UserException(sprintf(
+                'File download error occurred processing [%s]',
+                $table->getName()
+            ));
+        }
+
+        $this->dbConnector->cleanupTableStage($table->getName());
+
+        return $rowCount;
     }
 
     private function ensureOutputTableDir(): string
@@ -235,17 +300,6 @@ class Extractor
         return $outputDir;
     }
 
-    private function createOutputCsvFile(Table $table): CsvWriter
-    {
-        $filename = sprintf(
-            '%s/%s.csv',
-            $this->ensureOutputTableDir(),
-            $table->getName()
-        );
-
-        return new CsvWriter($filename);
-    }
-
     private function removeEmptyFile(Table $table): void
     {
         $filename = sprintf(
@@ -258,5 +312,46 @@ class Extractor
         if ($fs->exists($filename)) {
             $fs->remove($filename);
         }
+    }
+
+    private function generateCopyCommand(string $stageTmpPath, string $query): string
+    {
+        $csvOptions = [];
+        $csvOptions[] = sprintf('FIELD_DELIMITER = %s', QueryBuilder::quote(CsvOptions::DEFAULT_DELIMITER));
+        $csvOptions[] = sprintf(
+            'FIELD_OPTIONALLY_ENCLOSED_BY = %s',
+            QueryBuilder::quote(CsvOptions::DEFAULT_ENCLOSURE)
+        );
+        $csvOptions[] = sprintf('ESCAPE_UNENCLOSED_FIELD = %s', QueryBuilder::quote('\\'));
+        $csvOptions[] = sprintf('COMPRESSION = %s', QueryBuilder::quote('GZIP'));
+        $csvOptions[] = sprintf('NULL_IF=()');
+
+        return sprintf(
+            '
+            COPY INTO @~/%s/part
+            FROM (%s)
+
+            FILE_FORMAT = (TYPE=CSV %s)
+            HEADER = false
+            MAX_FILE_SIZE=50000000
+            OVERWRITE = TRUE
+            ;
+            ',
+            $stageTmpPath,
+            rtrim(trim($query), ';'),
+            implode(' ', $csvOptions)
+        );
+    }
+
+    private function getRetryProxy(): RetryProxy
+    {
+        return new RetryProxy(
+            new SimpleRetryPolicy(
+                Config::RETRY_MAX_ATTEMPTS,
+                ['Exception', 'ErrorExceptions', 'PDOException']
+            ),
+            new ExponentialBackOffPolicy(Config::RETRY_DEFAULT_BACKOFF_INTERVAL),
+            $this->logger
+        );
     }
 }

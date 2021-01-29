@@ -4,9 +4,10 @@
     "license": "MIT",
     "require": {
         "php": "^7.4",
-        "ext-PDO": "*",
+        "ext-json": "*",
         "keboola/common-exceptions": "^1.1",
         "keboola/csv": "^2.2",
+        "keboola/db-adapter-snowflake": "^1.02",
         "keboola/php-component": "^8.1",
         "keboola/php-datatypes": "^4.9",
         "keboola/retry": "^0.5.0",
@@ -14,7 +15,6 @@
         "symfony/filesystem": "^5.1"
     },
     "require-dev": {
-        "ext-json": "*",
         "keboola/coding-standard": ">=7.0.2",
         "keboola/datadir-tests": "^5.2",
         "keboola/php-temp": "^2.0",

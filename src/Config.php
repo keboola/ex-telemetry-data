@@ -72,6 +72,18 @@ class Config extends BaseConfig
         return $imageParameters['db']['database'];
     }
 
+    public function getDbSchema(): string
+    {
+        $imageParameters = $this->getImageParameters();
+        return $imageParameters['db']['schema'];
+    }
+
+    public function getDbWarehouse(): string
+    {
+        $imageParameters = $this->getImageParameters();
+        return $imageParameters['db']['warehouse'];
+    }
+
     public function isIncrementalFetching(): bool
     {
         return (bool) $this->getValue(['parameters', 'incrementalFetching']);

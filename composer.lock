@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "babd1df88785ba07b62a1aa0135aaea9",
+    "content-hash": "6b334379ae13969d516f64b858194a97",
     "packages": [
         {
             "name": "keboola/common-exceptions",
@@ -88,6 +88,49 @@
                 "rfc4180"
             ],
             "time": "2020-07-28T09:27:05+00:00"
+        },
+        {
+            "name": "keboola/db-adapter-snowflake",
+            "version": "1.02",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/keboola/db-adapter-snowflake.git",
+                "reference": "553f3c5bc3496c5fa12016057219616ff2ffa24b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/keboola/db-adapter-snowflake/zipball/553f3c5bc3496c5fa12016057219616ff2ffa24b",
+                "reference": "553f3c5bc3496c5fa12016057219616ff2ffa24b",
+                "shasum": ""
+            },
+            "require": {
+                "ext-odbc": "*",
+                "php": "^7.1"
+            },
+            "require-dev": {
+                "jakub-onderka/php-parallel-lint": "^1.0",
+                "keboola/coding-standard": ">=7.0.2",
+                "keboola/datadir-tests": "^2.0",
+                "keboola/php-temp": "^1.0",
+                "phpstan/phpstan-shim": "^0.10.6",
+                "phpunit/phpunit": "^7.0",
+                "symfony/process": "^4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Keboola\\SnowflakeDbAdapter\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "support": {
+                "issues": "https://github.com/keboola/db-adapter-snowflake/issues",
+                "source": "https://github.com/keboola/db-adapter-snowflake/tree/1.02"
+            },
+            "time": "2019-12-09T14:51:48+00:00"
         },
         {
             "name": "keboola/php-component",
@@ -3144,10 +3187,8 @@
     "prefer-lowest": false,
     "platform": {
         "php": "^7.4",
-        "ext-pdo": "*"
-    },
-    "platform-dev": {
         "ext-json": "*"
     },
-    "plugin-api-version": "1.1.0"
+    "platform-dev": [],
+    "plugin-api-version": "2.0.0"
 }

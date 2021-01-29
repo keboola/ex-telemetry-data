@@ -24,8 +24,8 @@ class Table
     public static function buildFromArray(array $data): self
     {
         return new self(
-            $data['TABLE_SCHEMA'],
-            $data['TABLE_NAME']
+            $data['schema_name'],
+            $data['name']
         );
     }
 

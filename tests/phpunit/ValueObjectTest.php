@@ -17,8 +17,8 @@ class ValueObjectTest extends TestCase
     {
         $table = Table::buildFromArray(
             [
-                'TABLE_SCHEMA' => 'test_schema',
-                'TABLE_NAME' => 'test_name',
+                'schema_name' => 'test_schema',
+                'name' => 'test_name',
             ]
         );
 

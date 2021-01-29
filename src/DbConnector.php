@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Keboola\TelemetryData;
 
-use Keboola\TelemetryData\Exception\ApplicationException;
+use Keboola\Component\UserException;
+use Keboola\SnowflakeDbAdapter\Connection;
+use Keboola\SnowflakeDbAdapter\Exception\SnowflakeDbAdapterException;
+use Keboola\SnowflakeDbAdapter\QueryBuilder;
 use Keboola\TelemetryData\ValueObject\Column;
 use Keboola\TelemetryData\ValueObject\Table;
-use \PDO;
-use \PDOException;
-use \PDOStatement;
+use Keboola\Temp\Temp;
 use Psr\Log\LoggerInterface;
+use SplFileInfo;
 
 class DbConnector
 {
@@ -18,99 +20,58 @@ class DbConnector
 
     private LoggerInterface $logger;
 
-    private PDO $connection;
+    private Connection $connection;
+
+    private SplFileInfo $snowSqlConfigFile;
 
     public function __construct(Config $config, LoggerInterface $logger)
     {
         $this->logger = $logger;
         $this->config = $config;
         $this->connection = $this->createConnection();
+        $this->snowSqlConfigFile = $this->createSnowSqlConfig();
     }
 
-    private function createConnection(): PDO
+    private function createConnection(): Connection
     {
-        $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // convert errors to PDOExceptions
+        $databaseConfigArray = [
+            'host' => $this->config->getDbHost(),
+            'user' => $this->config->getDbUser(),
+            'password' => $this->config->getDbPassword(),
+            'port' => $this->config->getDbPort(),
+            'database' => $this->config->getDbDatabase(),
+            'warehouse' => $this->config->getDbWarehouse(),
         ];
 
-        $dsn = sprintf(
-            'mysql:host=%s;port=%s;dbname=%s;charset=utf8',
-            $this->config->getDbHost(),
-            $this->config->getDbPort(),
-            $this->config->getDbDatabase()
-        );
-
-        $this->logger->info(sprintf('Connecting to DSN %s', $dsn));
-
         try {
-            $pdo = new PDO($dsn, $this->config->getDbUser(), $this->config->getDbPassword(), $options);
-        } catch (PDOException $e) {
-            // SQLSTATE[HY000] is general error without message, so throw previous exception
-            if (strpos($e->getMessage(), 'SQLSTATE[HY000]') === 0 && $e->getPrevious() !== null) {
-                throw $e->getPrevious();
-            }
-
-            throw $e;
+            $connection = new Connection($databaseConfigArray);
+            $connection->query(
+                sprintf(
+                    'USE SCHEMA %s',
+                    QueryBuilder::quoteIdentifier($this->config->getDbSchema())
+                )
+            );
+        } catch (SnowflakeDbAdapterException $e) {
+            throw new UserException($e->getMessage(), 0, $e);
         }
 
-        try {
-            $pdo->exec('SET NAMES utf8mb4;');
-        } catch (PDOException $exception) {
-            $this->logger->info('Falling back to "utf8" charset');
-            $pdo->exec('SET NAMES utf8;');
-        }
-
-        return $pdo;
+        return $connection;
     }
 
-    public function fetchAll(string $sql): array
+    public function getSnowSqlConfigFile(): SplFileInfo
     {
-        $stmt = $this->connection->query($sql);
-        if (!$stmt) {
-            throw new ApplicationException(sprintf('Query execution failed: %s', $sql));
-        }
-        return (array) $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $this->snowSqlConfigFile;
     }
 
-    public function getTables(?array $sourceTables = null): array
+    public function getTables(?array $whiteList = null): array
     {
-        if (is_array($sourceTables) && !$sourceTables) {
+        if (is_array($whiteList) && !$whiteList) {
             return [];
         }
-        $whereStatement = [
-            sprintf(
-                'LOWER(%s) = %s',
-                $this->quoteIdentifier('TABLE_SCHEMA'),
-                $this->quote(
-                    $this->config->getDbDatabase()
-                )
-            ),
-        ];
-
-        if ($sourceTables) {
-            $sourceTablesQuote = array_map(function (Table $v) {
-                return $this->quote($v->getName());
-            }, $sourceTables);
-            $whereStatement[] = sprintf(
-                '%s IN (%s)',
-                $this->quoteIdentifier('TABLE_NAME'),
-                implode(', ', $sourceTablesQuote)
-            );
-        }
-
-        $sqlColumns = sprintf(
-            'SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE %s ORDER BY %s',
-            implode(' AND ', $whereStatement),
-            $this->quoteIdentifier('ORDINAL_POSITION')
-        );
-
-        $sqlTables = sprintf(
-            'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE %s',
-            implode(' AND ', $whereStatement)
-        );
 
         $tables = [];
-        foreach ($this->fetchAll($sqlTables) as $table) {
+        $sqlWhereElements = [];
+        foreach ($this->queryTables($whiteList) as $table) {
             $tableObject = Table::buildFromArray(
                 $table,
             );
@@ -122,9 +83,14 @@ class DbConnector
             );
 
             $tables[$tableId] = $tableObject;
+            $sqlWhereElements[] = sprintf(
+                '(table_schema = %s AND table_name = %s)',
+                QueryBuilder::quote($table['schema_name']),
+                QueryBuilder::quote($table['name'])
+            );
         }
 
-        foreach ($this->fetchAll($sqlColumns) as $column) {
+        foreach ($this->queryColumns($sqlWhereElements) as $column) {
             $columnObject = Column::buildFromArray($column);
             $tableId = sprintf(
                 '%s.%s',
@@ -134,7 +100,6 @@ class DbConnector
 
             $tables[$tableId]->addColumn($columnObject);
         }
-
         foreach ($tables as $tableId => $table) {
             $missingColumns = $table->getMissingRequiredColumns();
             if ($missingColumns) {
@@ -150,21 +115,77 @@ class DbConnector
         return $tables;
     }
 
-    public function quote(string $str): string
+    public function cleanupTableStage(string $tmpTableName): void
     {
-        return $this->connection->quote($str);
+        $sql = sprintf('REMOVE @~/%s;', $tmpTableName);
+        $this->connection->query($sql);
     }
 
-    public function quoteIdentifier(string $str): string
+    public function fetchAll(string $sql): array
     {
-        return sprintf('`%s`', $str);
+        return $this->connection->fetchAll($sql);
     }
 
-    public function execute(string $sql): PDOStatement
+    private function createSnowSqlConfig(): SplFileInfo
     {
-        $this->logger->info(sprintf('Run query "%s"', $sql));
-        $stmt = $this->connection->prepare($sql);
-        $stmt->execute();
-        return $stmt;
+        $hostParts = explode('.', $this->config->getDbHost());
+        $accountName = implode('.', array_slice($hostParts, 0, count($hostParts) - 2));
+
+        $cliConfig[] = '';
+        $cliConfig[] = '[options]';
+        $cliConfig[] = 'exit_on_error = true';
+        $cliConfig[] = '';
+        $cliConfig[] = '[connections.downloader]';
+        $cliConfig[] = sprintf('accountname = "%s"', $accountName);
+        $cliConfig[] = sprintf('username = "%s"', $this->config->getDbUser());
+        $cliConfig[] = sprintf('password = "%s"', $this->config->getDbPassword());
+        $cliConfig[] = sprintf('dbname = "%s"', $this->config->getDbDatabase());
+        $cliConfig[] = sprintf('warehousename = "%s"', $this->config->getDbWarehouse());
+        $cliConfig[] = sprintf('schemaname = "%s"', $this->config->getDbSchema());
+
+        $file = (new Temp())->createFile('snowsql.config');
+        file_put_contents($file->getPathname(), implode("\n", $cliConfig));
+
+        return $file;
+    }
+
+    private function queryTables(?array $whiteList): array
+    {
+        $tables = $this->connection->fetchAll('SHOW TABLES IN SCHEMA');
+
+        $filteredTables = array_filter($tables, function ($v) use ($whiteList) {
+            return !$this->shouldTableBeSkipped($v, $whiteList);
+        });
+
+        usort($filteredTables, function ($item1, $item2) {
+            return strnatcmp($item1['name'], $item2['name']);
+        });
+
+        return $filteredTables;
+    }
+
+    private function shouldTableBeSkipped(array $table, ?array $whiteList): bool
+    {
+        $isFromInformationSchema = $table['schema_name'] === 'INFORMATION_SCHEMA';
+        $isNotFromWhiteList = false;
+        if ($whiteList) {
+            $filteredWhiteList = array_filter($whiteList, function (Table $v) use ($table) {
+                return $v->getSchema() === $table['schema_name'] && $v->getName() === $table['name'];
+            });
+            $isNotFromWhiteList = empty($filteredWhiteList);
+        }
+        return $isFromInformationSchema || $isNotFromWhiteList;
+    }
+
+    private function queryColumns(array $queryTables): array
+    {
+        $sqlWhereClause = sprintf('WHERE %s', implode(' OR ', $queryTables));
+
+        $sql = sprintf(
+            'SELECT * FROM information_schema.columns %s ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION',
+            $sqlWhereClause
+        );
+
+        return $this->connection->fetchAll($sql);
     }
 }
