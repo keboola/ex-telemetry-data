@@ -1,4 +1,5 @@
 {
+    "destination": "data",
     "columns": [
         "dst_proj_single",
         "dst_stack_single",
