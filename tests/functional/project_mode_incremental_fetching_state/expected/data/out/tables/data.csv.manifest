@@ -8,6 +8,7 @@
         "dst_timestamp",
         "sample_data"
     ],
+    "incremental": false,
     "metadata": [
         {
             "key": "KBC.name",
