@@ -179,6 +179,7 @@ class Extractor
             $tableMetadata = [];
             $columnsMetadata = [];
             $columnNames = [];
+            $primaryKeys = [];
             foreach ($tableStructure->getColumns() as $column) {
                 $columnNames[] = $column->getName();
                 try {
@@ -198,6 +199,9 @@ class Extractor
                     );
                 }
                 $columnsMetadata[$column->getName()] = $datatype->toMetadata();
+                if ($column->isPrimaryKey()) {
+                    $primaryKeys[] = $column->getName();
+                }
             }
             $tableMetadata[] = [
                 'key' => 'KBC.name',
@@ -206,6 +210,7 @@ class Extractor
 
             $tableManifestOptions = new OutTableManifestOptions();
             $tableManifestOptions
+                ->setPrimaryKeyColumns($primaryKeys)
                 ->setIncremental($this->config->isIncremental())
                 ->setDestination($tableStructure->getName())
                 ->setMetadata($tableMetadata)

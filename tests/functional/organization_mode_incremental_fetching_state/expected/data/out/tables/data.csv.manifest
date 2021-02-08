@@ -1,5 +1,6 @@
 {
     "destination": "data",
+    "primary_key": [],
     "columns": [
         "dst_proj_single",
         "dst_stack_single",

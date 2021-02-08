@@ -115,6 +115,24 @@ SQL;
 
             $this->connection->query($sql);
 
+            if (isset($fileContent['primary_key'])) {
+                $sqlConstraintsTemplate = <<<SQL
+ALTER TABLE %s ADD CONSTRAINT PK_%s PRIMARY KEY (%s)
+SQL;
+
+                $sql = sprintf(
+                    $sqlConstraintsTemplate,
+                    QueryBuilder::quoteIdentifier($databaseTableName),
+                    $databaseTableName,
+                    implode(
+                        ', ',
+                        array_map(fn(string $v) => QueryBuilder::quoteIdentifier($v), $fileContent['primary_key'])
+                    )
+                );
+
+                $this->connection->query($sql);
+            }
+
             $sqlInsertTemplate = <<<SQL
 INSERT INTO %s VALUES (%s);
 SQL;
