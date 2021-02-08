@@ -1,2 +1,2 @@
 Exporting to "data"
-Run query "SELECT * FROM "telemetry_data"."data" WHERE "dst_proj_company" = '2' AND "dst_stack_company" = 'connection.north-europe.azure.keboola.com' AND "dst_timestamp" >= '2020-12-01 08:09:10' ORDER BY "dst_timestamp""
+Run query "SELECT * FROM "%s"."data" WHERE "dst_proj_company" = '2' AND "dst_stack_company" = 'connection.north-europe.azure.keboola.com' AND "dst_timestamp" >= '2020-12-01 08:09:10' ORDER BY "dst_timestamp""

@@ -1,2 +1,2 @@
 Exporting to "data"
-Run query "SELECT * FROM "telemetry_data"."data" WHERE "dst_proj_single" = '2' AND "dst_stack_single" = 'connection.north-europe.azure.keboola.com'"
+Run query "SELECT * FROM "%s"."data" WHERE "dst_proj_single" = '2' AND "dst_stack_single" = 'connection.north-europe.azure.keboola.com'"
