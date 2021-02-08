@@ -90,6 +90,8 @@ class DbConnector
             );
         }
 
+        $primaryKeys = $this->queryPrimaryKeys();
+
         foreach ($this->queryColumns($sqlWhereElements) as $column) {
             $columnObject = Column::buildFromArray($column);
             $tableId = sprintf(
@@ -97,6 +99,10 @@ class DbConnector
                 $columnObject->getTableSchema(),
                 $columnObject->getTableName()
             );
+
+            if (isset($primaryKeys[$tableId])) {
+                $columnObject->setIsPrimaryKey(in_array($columnObject->getName(), $primaryKeys[$tableId]));
+            }
 
             $tables[$tableId]->addColumn($columnObject);
         }
@@ -187,5 +193,27 @@ class DbConnector
         );
 
         return $this->connection->fetchAll($sql);
+    }
+
+    private function queryPrimaryKeys(): array
+    {
+        $sql = sprintf(
+            'SHOW PRIMARY KEYS IN DATABASE %s',
+            QueryBuilder::quoteIdentifier($this->config->getDbDatabase())
+        );
+
+        $primaryKeys = $this->connection->fetchAll($sql);
+
+        $result = [];
+        foreach ($primaryKeys as $primaryKey) {
+            $tableId = sprintf(
+                '%s.%s',
+                $primaryKey['schema_name'],
+                $primaryKey['table_name']
+            );
+            $result[$tableId][] = $primaryKey['column_name'];
+        }
+
+        return $result;
     }
 }

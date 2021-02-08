@@ -32,6 +32,8 @@ class Column
 
     private bool $isNullable;
 
+    private bool $isPrimaryKey = false;
+
     private string $dataType;
 
     private string $tableSchema;
@@ -70,6 +72,17 @@ class Column
         $this->dataType = $dataType;
         $this->tableSchema = $tableSchema;
         $this->tableName = $tableName;
+    }
+
+    public function setIsPrimaryKey(bool $isPrimaryKey): self
+    {
+        $this->isPrimaryKey = $isPrimaryKey;
+        return $this;
+    }
+
+    public function isPrimaryKey(): bool
+    {
+        return $this->isPrimaryKey;
     }
 
     public function getName(): string
