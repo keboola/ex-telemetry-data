@@ -1,0 +1,17 @@
+{
+  "parameters": {
+    "mode": "organization",
+    "incrementalFetching": true
+  },
+  "image_parameters": {
+    "db": {
+      "host": "%env(string:SNOWFLAKE_DB_HOST)%",
+      "port": "%env(int:SNOWFLAKE_DB_PORT)%",
+      "user": "%env(string:SNOWFLAKE_DB_USER)%",
+      "database": "%env(string:SNOWFLAKE_DB_DATABASE)%",
+      "#password": "%env(string:SNOWFLAKE_DB_PASSWORD)%",
+      "schema": "%env(string:SNOWFLAKE_DB_SCHEMA)%",
+      "warehouse": "%env(string:SNOWFLAKE_DB_WAREHOUSE)%"
+    }
+  }
+}

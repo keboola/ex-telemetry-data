@@ -69,9 +69,14 @@ class DbConnector
             return [];
         }
 
-        $tables = [];
+        $tables = $this->queryTables($whiteList);
+        if (!$tables) {
+            return [];
+        }
+
+        $tableObjects = [];
         $sqlWhereElements = [];
-        foreach ($this->queryTables($whiteList) as $table) {
+        foreach ($tables as $table) {
             $tableObject = Table::buildFromArray(
                 $table,
             );
@@ -82,7 +87,7 @@ class DbConnector
                 $tableObject->getName()
             );
 
-            $tables[$tableId] = $tableObject;
+            $tableObjects[$tableId] = $tableObject;
             $sqlWhereElements[] = sprintf(
                 '(table_schema = %s AND table_name = %s)',
                 QueryBuilder::quote($table['schema_name']),
@@ -104,12 +109,12 @@ class DbConnector
                 $columnObject->setIsPrimaryKey(in_array($columnObject->getName(), $primaryKeys[$tableId]));
             }
 
-            $tables[$tableId]->addColumn($columnObject);
+            $tableObjects[$tableId]->addColumn($columnObject);
         }
-        foreach ($tables as $tableId => $table) {
+        foreach ($tableObjects as $tableId => $table) {
             $missingColumns = $table->getMissingRequiredColumns();
             if ($missingColumns) {
-                unset($tables[$tableId]);
+                unset($tableObjects[$tableId]);
                 $this->logger->info(sprintf(
                     'Missing "%s" columns for table "%s".',
                     implode(', ', $missingColumns),
@@ -118,7 +123,7 @@ class DbConnector
             }
         }
 
-        return $tables;
+        return $tableObjects;
     }
 
     public function cleanupTableStage(string $tmpTableName): void
@@ -173,6 +178,7 @@ class DbConnector
     private function shouldTableBeSkipped(array $table, ?array $whiteList): bool
     {
         $isFromInformationSchema = $table['schema_name'] === 'INFORMATION_SCHEMA';
+        $isStageTable = substr($table['name'], 0, 7) === 'staging';
         $isNotFromWhiteList = false;
         if ($whiteList) {
             $filteredWhiteList = array_filter($whiteList, function (Table $v) use ($table) {
@@ -180,7 +186,7 @@ class DbConnector
             });
             $isNotFromWhiteList = empty($filteredWhiteList);
         }
-        return $isFromInformationSchema || $isNotFromWhiteList;
+        return $isFromInformationSchema || $isNotFromWhiteList || $isStageTable;
     }
 
     private function queryColumns(array $queryTables): array
