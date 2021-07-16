@@ -11,6 +11,7 @@ use Keboola\Datatype\Definition\Exception\InvalidTypeException;
 use Keboola\Datatype\Definition\GenericStorage;
 use Keboola\Datatype\Definition\MySQL;
 use Keboola\SnowflakeDbAdapter\QueryBuilder;
+use Keboola\TelemetryData\Exception\SnowsqlException;
 use Keboola\TelemetryData\ValueObject\Column;
 use Keboola\TelemetryData\ValueObject\Table;
 use Keboola\Temp\Temp;
@@ -231,10 +232,7 @@ class Extractor
             $this->generateSqlStatement($table)
         );
 
-        $result = $this->getRetryProxy()->call(function () use ($copyCommand) {
-            return $this->dbConnector->fetchAll($copyCommand);
-        });
-
+        $result = $this->dbConnector->fetchAll($copyCommand);
         $rowCount = (int) ($result[0]['rows_unloaded'] ?? 0);
         if ($rowCount === 0) {
             return 0;
@@ -277,7 +275,7 @@ class Extractor
         if (!$process->isSuccessful()) {
             $this->logger->error(sprintf('Snowsql error, process output %s', $process->getOutput()));
             $this->logger->error(sprintf('Snowsql error: %s', $process->getErrorOutput()));
-            throw new UserException(sprintf(
+            throw new SnowsqlException(sprintf(
                 'File download error occurred processing [%s]',
                 $table->getName()
             ));
@@ -353,7 +351,7 @@ class Extractor
         return new RetryProxy(
             new SimpleRetryPolicy(
                 Config::RETRY_MAX_ATTEMPTS,
-                ['Exception', 'ErrorExceptions', 'PDOException']
+                ['Exception', 'SnowsqlException']
             ),
             new ExponentialBackOffPolicy(Config::RETRY_DEFAULT_BACKOFF_INTERVAL),
             $this->logger
