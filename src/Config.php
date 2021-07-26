@@ -86,11 +86,17 @@ class Config extends BaseConfig
 
     public function isIncrementalFetching(): bool
     {
-        return (bool) $this->getValue(['parameters', 'incrementalFetching']);
+        return false;
+
+        // temporarily disabled
+        // return (bool) $this->getValue(['parameters', 'incrementalFetching']);
     }
 
     public function isIncremental(): bool
     {
-        return (bool) $this->getValue(['parameters', 'incremental']);
+        return false;
+
+        // temporarily disabled
+        // return (bool) $this->getValue(['parameters', 'incremental']);
     }
 }
