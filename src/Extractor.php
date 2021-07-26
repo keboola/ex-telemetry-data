@@ -227,7 +227,12 @@ class Extractor
 
     private function exportAndDownloadData(Table $table): int
     {
-        $tmpTableName = sprintf('%s_%s', $table->getName(), $this->config->getProjectId());
+        $tmpTableName = sprintf(
+            '%s_%s_%s',
+            $table->getName(),
+            $this->config->getProjectId(),
+            $this->config->getKbcStackId()
+        );
         $copyCommand = $this->generateCopyCommand(
             $tmpTableName,
             $this->generateSqlStatement($table)
