@@ -227,8 +227,9 @@ class Extractor
 
     private function exportAndDownloadData(Table $table): int
     {
+        $tmpTableName = sprintf('%s_%s', $table->getName(), $this->config->getProjectId());
         $copyCommand = $this->generateCopyCommand(
-            $table->getName(),
+            $tmpTableName,
             $this->generateSqlStatement($table)
         );
 
@@ -255,7 +256,7 @@ class Extractor
         );
         $sqls[] = sprintf(
             'GET @~/%s file://%s;',
-            $table->getName(),
+            $tmpTableName,
             $outputDataDir
         );
 
@@ -281,7 +282,7 @@ class Extractor
             ));
         }
 
-        $this->dbConnector->cleanupTableStage($table->getName());
+        $this->dbConnector->cleanupTableStage($tmpTableName);
 
         return $rowCount;
     }
