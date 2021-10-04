@@ -94,7 +94,8 @@ jobs:
           tag_as_latest: true
       -
         name: Run tests
-        run: docker run \
+        run: |
+          docker run \
           -e SNOWFLAKE_DB_HOST \
           -e SNOWFLAKE_DB_USER \
           -e SNOWFLAKE_DB_PASSWORD \
