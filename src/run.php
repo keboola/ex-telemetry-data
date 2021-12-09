@@ -10,6 +10,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $logger = new Logger();
 try {
+    throw new UserException('The data source is temporarily unavailable.');
     $app = new Component($logger);
     $app->execute();
     exit(0);
