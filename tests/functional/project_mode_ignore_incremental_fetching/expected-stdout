@@ -1,0 +1,6 @@
+Exporting to "data"
+Run query "SELECT * FROM "%s"."data" WHERE "dst_proj_single" = '2' AND "dst_stack_single" = 'connection.north-europe.azure.keboola.com' ORDER BY "dst_timestamp""
+Downloading data from Snowflake
+Exporting to "ignoreInc"
+Run query "SELECT * FROM "%s"."ignoreInc" WHERE "dst_proj_single" = '2' AND "dst_stack_single" = 'connection.north-europe.azure.keboola.com'"
+Downloading data from Snowflake
