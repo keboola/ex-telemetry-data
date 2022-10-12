@@ -84,13 +84,22 @@ class Config extends BaseConfig
         return $imageParameters['db']['warehouse'];
     }
 
-    public function isIncrementalFetching(): bool
+    public function isIncrementalFetching(?string $tableName = null): bool
     {
+        if ($tableName && in_array($tableName, $this->tablesIgnoringIncrementalFetching())) {
+            return false;
+        }
+
         return (bool) $this->getValue(['parameters', 'incrementalFetching']);
     }
 
     public function isIncremental(): bool
     {
         return (bool) $this->getValue(['parameters', 'incremental']);
+    }
+
+    private function tablesIgnoringIncrementalFetching(): array
+    {
+        return $this->getImageParameters()['tablesIgnoringIncrementalFetching'] ?? [];
     }
 }

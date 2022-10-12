@@ -73,7 +73,7 @@ class Extractor
                 throw new UserException($message, 0, $e);
             }
 
-            if ($this->config->isIncrementalFetching()) {
+            if ($this->config->isIncrementalFetching($table->getName())) {
                 $lastRow = $this->getLastRow($table);
                 if ($lastRow) {
                     $result[$table->getName()] = [
@@ -143,7 +143,7 @@ class Extractor
             QueryBuilder::quote($this->config->getKbcStackId())
         );
 
-        if ($this->config->isIncrementalFetching()) {
+        if ($this->config->isIncrementalFetching($table->getName())) {
             if (isset($this->inputState[$table->getName()]['lastFetchedValue'])) {
                 $whereStatement[] = sprintf(
                     '%s >= %s',
