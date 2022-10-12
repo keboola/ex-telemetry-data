@@ -93,8 +93,12 @@ class Config extends BaseConfig
         return (bool) $this->getValue(['parameters', 'incrementalFetching']);
     }
 
-    public function isIncremental(): bool
+    public function isIncremental(?string $tableName = null): bool
     {
+        if ($tableName && in_array($tableName, $this->tablesIgnoringIncrementalFetching())) {
+            return false;
+        }
+
         return (bool) $this->getValue(['parameters', 'incremental']);
     }
 

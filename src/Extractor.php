@@ -212,7 +212,7 @@ class Extractor
             $tableManifestOptions = new OutTableManifestOptions();
             $tableManifestOptions
                 ->setPrimaryKeyColumns($primaryKeys)
-                ->setIncremental($this->config->isIncremental())
+                ->setIncremental($this->config->isIncremental($tableStructure->getName()))
                 ->setDestination($tableStructure->getName())
                 ->setMetadata($tableMetadata)
                 ->setColumns($columnNames)
