@@ -1,7 +1,8 @@
 {
   "parameters": {
     "mode": "project",
-    "incrementalFetching": true
+    "incrementalFetching": true,
+    "incremental": true
   },
   "image_parameters": {
     "db": {
