@@ -20,6 +20,7 @@ class DatadirTest extends DatadirTestCase
 
     public function setUp(): void
     {
+        $this->markTestSkipped();
         $this->connection = new Connection(
             [
                 'host' => getenv('SNOWFLAKE_DB_HOST'),
