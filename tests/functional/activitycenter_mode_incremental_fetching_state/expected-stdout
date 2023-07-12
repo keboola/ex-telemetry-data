@@ -1,0 +1,3 @@
+Exporting to "data"
+Run query "SELECT * FROM "telemetry_data_travis"."data" WHERE "dst_proj_ac" = '2' AND "dst_stack_ac" = 'connection.north-europe.azure.keboola.com' AND "dst_timestamp" >= '2020-12-01 09:09:10' ORDER BY "dst_timestamp""
+Downloading data from Snowflake

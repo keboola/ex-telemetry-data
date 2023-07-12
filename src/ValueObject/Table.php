@@ -15,6 +15,8 @@ class Table
         'dst_stack_single',
         'dst_proj_company',
         'dst_stack_company',
+        'dst_proj_ac',
+        'dst_stack_ac',
         'dst_timestamp',
     ];
 

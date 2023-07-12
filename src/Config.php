@@ -17,6 +17,8 @@ class Config extends BaseConfig
 
     public const MODE_ORGANIZATION = 'organization';
 
+    public const MODE_ACTIVITY_CENTER = 'activity-center';
+
     public const STATE_INCREMENTAL_KEY = 'lastFetchedValue';
 
     public function getProjectId(): string

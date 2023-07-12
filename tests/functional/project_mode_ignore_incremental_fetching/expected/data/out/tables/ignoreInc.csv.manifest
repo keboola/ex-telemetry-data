@@ -6,6 +6,8 @@
         "dst_stack_single",
         "dst_proj_company",
         "dst_stack_company",
+        "dst_proj_ac",
+        "dst_stack_ac",
         "dst_timestamp",
         "sample_data"
     ],
@@ -60,6 +62,34 @@
             }
         ],
         "dst_stack_company": [
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
+            {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            }
+        ],
+        "dst_proj_ac": [
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
+            {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            }
+        ],
+        "dst_stack_ac": [
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"

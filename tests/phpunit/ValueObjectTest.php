@@ -74,12 +74,69 @@ class ValueObjectTest extends TestCase
         yield [
             [],
             [
-                'dst_proj_single',
-                'dst_stack_single',
-                'dst_proj_company',
-                'dst_stack_company',
-                'dst_timestamp',
+                Column::PROJECT_SINGLE_NAME,
+                Column::STACK_SINGLE_NAME,
+                Column::PROJECT_COMPANY_NAME,
+                Column::STACK_COMPANY_NAME,
+                Column::PROJECT_ACTIVITY_CENTER_NAME,
+                Column::STACK_ACTIVITY_CENTER_NAME,
+                Column::INCREMENTAL_NAME,
             ],
+        ];
+        yield [
+            [
+                Column::STACK_COMPANY_NAME,
+                Column::STACK_SINGLE_NAME,
+                Column::STACK_ACTIVITY_CENTER_NAME,
+                Column::PROJECT_COMPANY_NAME,
+                Column::PROJECT_SINGLE_NAME,
+                Column::PROJECT_ACTIVITY_CENTER_NAME,
+            ],
+            [Column::INCREMENTAL_NAME],
+        ];
+        yield [
+            [
+                Column::STACK_COMPANY_NAME,
+                Column::STACK_SINGLE_NAME,
+                Column::STACK_ACTIVITY_CENTER_NAME,
+                Column::PROJECT_COMPANY_NAME,
+                Column::PROJECT_ACTIVITY_CENTER_NAME,
+                Column::INCREMENTAL_NAME,
+            ],
+            [Column::PROJECT_SINGLE_NAME],
+        ];
+        yield [
+            [
+                Column::STACK_COMPANY_NAME,
+                Column::STACK_SINGLE_NAME,
+                Column::STACK_ACTIVITY_CENTER_NAME,
+                Column::PROJECT_SINGLE_NAME,
+                Column::PROJECT_ACTIVITY_CENTER_NAME,
+                Column::INCREMENTAL_NAME,
+            ],
+            [Column::PROJECT_COMPANY_NAME],
+        ];
+        yield [
+            [
+                Column::STACK_COMPANY_NAME,
+                Column::STACK_ACTIVITY_CENTER_NAME,
+                Column::PROJECT_COMPANY_NAME,
+                Column::PROJECT_SINGLE_NAME,
+                Column::PROJECT_ACTIVITY_CENTER_NAME,
+                Column::INCREMENTAL_NAME,
+            ],
+            [Column::STACK_SINGLE_NAME],
+        ];
+        yield [
+            [
+                Column::STACK_SINGLE_NAME,
+                Column::STACK_ACTIVITY_CENTER_NAME,
+                Column::PROJECT_COMPANY_NAME,
+                Column::PROJECT_SINGLE_NAME,
+                Column::PROJECT_ACTIVITY_CENTER_NAME,
+                Column::INCREMENTAL_NAME,
+            ],
+            [Column::STACK_COMPANY_NAME],
         ];
         yield [
             [
@@ -87,44 +144,21 @@ class ValueObjectTest extends TestCase
                 Column::STACK_SINGLE_NAME,
                 Column::PROJECT_COMPANY_NAME,
                 Column::PROJECT_SINGLE_NAME,
+                Column::PROJECT_ACTIVITY_CENTER_NAME,
+                Column::INCREMENTAL_NAME,
             ],
-            ['dst_timestamp'],
+            [Column::STACK_ACTIVITY_CENTER_NAME],
         ];
         yield [
             [
                 Column::STACK_COMPANY_NAME,
                 Column::STACK_SINGLE_NAME,
-                Column::PROJECT_COMPANY_NAME,
-                Column::INCREMENTAL_NAME,
-            ],
-            ['dst_proj_single'],
-        ];
-        yield [
-            [
-                Column::STACK_COMPANY_NAME,
-                Column::STACK_SINGLE_NAME,
-                Column::PROJECT_SINGLE_NAME,
-                Column::INCREMENTAL_NAME,
-            ],
-            ['dst_proj_company'],
-        ];
-        yield [
-            [
-                Column::STACK_COMPANY_NAME,
+                Column::STACK_ACTIVITY_CENTER_NAME,
                 Column::PROJECT_COMPANY_NAME,
                 Column::PROJECT_SINGLE_NAME,
                 Column::INCREMENTAL_NAME,
             ],
-            ['dst_stack_single'],
-        ];
-        yield [
-            [
-                Column::STACK_SINGLE_NAME,
-                Column::PROJECT_COMPANY_NAME,
-                Column::PROJECT_SINGLE_NAME,
-                Column::INCREMENTAL_NAME,
-            ],
-            ['dst_stack_company'],
+            [Column::PROJECT_ACTIVITY_CENTER_NAME],
         ];
     }
 }
