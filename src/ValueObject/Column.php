@@ -14,6 +14,10 @@ class Column
 
     public const STACK_COMPANY_NAME = 'dst_stack_company';
 
+    public const PROJECT_ACTIVITY_CENTER_NAME = 'dst_proj_ac';
+
+    public const STACK_ACTIVITY_CENTER_NAME = 'dst_stack_ac';
+
     public const INCREMENTAL_NAME = 'dst_timestamp';
 
     private const TYPE_WITHOUT_LENGTH = [

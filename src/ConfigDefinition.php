@@ -17,7 +17,7 @@ class ConfigDefinition extends BaseConfigDefinition
         $parametersNode
             ->children()
                 ->enumNode('mode')
-                    ->values([Config::MODE_PROJECT, Config::MODE_ORGANIZATION])
+                    ->values([Config::MODE_PROJECT, Config::MODE_ORGANIZATION, Config::MODE_ACTIVITY_CENTER])
                     ->defaultValue(Config::MODE_PROJECT)
                 ->end()
                 ->booleanNode('incrementalFetching')->defaultFalse()->end()

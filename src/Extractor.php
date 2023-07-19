@@ -128,6 +128,10 @@ class Extractor
                 $projectColumnName = Column::PROJECT_COMPANY_NAME;
                 $stackColumnName = Column::STACK_COMPANY_NAME;
                 break;
+            case Config::MODE_ACTIVITY_CENTER:
+                $projectColumnName = Column::PROJECT_ACTIVITY_CENTER_NAME;
+                $stackColumnName = Column::STACK_ACTIVITY_CENTER_NAME;
+                break;
             default:
                 throw new UserException(sprintf('Unknown mode "%s".', $this->config->getMode()));
         }
