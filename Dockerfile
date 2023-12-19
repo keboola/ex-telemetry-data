@@ -7,6 +7,9 @@ ARG COMPOSER_FLAGS="--prefer-dist --no-interaction"
 ARG DEBIAN_FRONTEND=noninteractive
 ENV COMPOSER_ALLOW_SUPERUSER 1
 ENV COMPOSER_PROCESS_TIMEOUT 3600
+ENV TMPDIR=/opt/snowsqltempdir
+
+RUN mkdir -p /opt/snowsqltempdir
 
 WORKDIR /code/
 
