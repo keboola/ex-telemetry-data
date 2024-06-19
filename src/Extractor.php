@@ -11,7 +11,7 @@ use Keboola\Csv\CsvOptions;
 use Keboola\Datatype\Definition\Exception\InvalidTypeException;
 use Keboola\Datatype\Definition\GenericStorage;
 use Keboola\Datatype\Definition\MySQL;
-use Keboola\SnowflakeDbAdapter\QueryBuilder;
+use Keboola\TableBackendUtils\Escaping\Snowflake\SnowflakeQuote;
 use Keboola\TelemetryData\Exception\SnowsqlException;
 use Keboola\TelemetryData\ValueObject\Column;
 use Keboola\TelemetryData\ValueObject\Table;
@@ -86,10 +86,10 @@ class Extractor
     {
         $sql = sprintf(
             'SELECT %s FROM %s.%s ORDER BY %s DESC LIMIT 1',
-            QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME),
-            QueryBuilder::quoteIdentifier($table->getSchema()),
-            QueryBuilder::quoteIdentifier($table->getName()),
-            QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME),
+            SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME),
+            SnowflakeQuote::quoteSingleIdentifier($table->getSchema()),
+            SnowflakeQuote::quoteSingleIdentifier($table->getName()),
+            SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME),
         );
 
         $resultLastRow = $this->getRetryProxy()->call(fn(): array => $this->dbConnector->fetchAll($sql));
@@ -105,8 +105,8 @@ class Extractor
     {
         $sql = sprintf(
             'SELECT * FROM %s.%s',
-            QueryBuilder::quoteIdentifier($table->getSchema()),
-            QueryBuilder::quoteIdentifier($table->getName()),
+            SnowflakeQuote::quoteSingleIdentifier($table->getSchema()),
+            SnowflakeQuote::quoteSingleIdentifier($table->getName()),
         );
 
         $whereStatement = [];
@@ -130,24 +130,24 @@ class Extractor
 
         $whereStatement[] = sprintf(
             '%s = %s',
-            QueryBuilder::quoteIdentifier($projectColumnName),
-            QueryBuilder::quote($this->config->getProjectId()),
+            SnowflakeQuote::quoteSingleIdentifier($projectColumnName),
+            SnowflakeQuote::quote($this->config->getProjectId()),
         );
         $whereStatement[] = sprintf(
             '%s = %s',
-            QueryBuilder::quoteIdentifier($stackColumnName),
-            QueryBuilder::quote($this->config->getKbcStackId()),
+            SnowflakeQuote::quoteSingleIdentifier($stackColumnName),
+            SnowflakeQuote::quote($this->config->getKbcStackId()),
         );
 
         if ($this->config->isIncrementalFetching($table->getName())) {
             if (isset($this->inputState[$table->getName()]['lastFetchedValue'])) {
                 $whereStatement[] = sprintf(
                     '%s >= %s',
-                    QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME),
-                    QueryBuilder::quote($this->inputState[$table->getName()]['lastFetchedValue']),
+                    SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME),
+                    SnowflakeQuote::quote($this->inputState[$table->getName()]['lastFetchedValue']),
                 );
             }
-            $orderStatement = QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME);
+            $orderStatement = SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME);
         }
 
         $sql .= sprintf(
@@ -250,12 +250,12 @@ class Extractor
         $this->logger->info('Downloading data from Snowflake');
 
         $sqls = [];
-        $sqls[] = sprintf('USE WAREHOUSE %s;', QueryBuilder::quoteIdentifier($this->config->getDbWarehouse()));
-        $sqls[] = sprintf('USE DATABASE %s;', QueryBuilder::quoteIdentifier($this->config->getDbDatabase()));
+        $sqls[] = sprintf('USE WAREHOUSE %s;', SnowflakeQuote::quoteSingleIdentifier($this->config->getDbWarehouse()));
+        $sqls[] = sprintf('USE DATABASE %s;', SnowflakeQuote::quoteSingleIdentifier($this->config->getDbDatabase()));
         $sqls[] = sprintf(
             'USE SCHEMA %s.%s;',
-            QueryBuilder::quoteIdentifier($this->config->getDbDatabase()),
-            QueryBuilder::quoteIdentifier($this->config->getDbSchema()),
+            SnowflakeQuote::quoteSingleIdentifier($this->config->getDbDatabase()),
+            SnowflakeQuote::quoteSingleIdentifier($this->config->getDbSchema()),
         );
         $sqls[] = sprintf(
             'GET @~/%s file://%s;',
@@ -324,13 +324,13 @@ class Extractor
     private function generateCopyCommand(string $stageTmpPath, string $query): string
     {
         $csvOptions = [];
-        $csvOptions[] = sprintf('FIELD_DELIMITER = %s', QueryBuilder::quote(CsvOptions::DEFAULT_DELIMITER));
+        $csvOptions[] = sprintf('FIELD_DELIMITER = %s', SnowflakeQuote::quote(CsvOptions::DEFAULT_DELIMITER));
         $csvOptions[] = sprintf(
             'FIELD_OPTIONALLY_ENCLOSED_BY = %s',
-            QueryBuilder::quote(CsvOptions::DEFAULT_ENCLOSURE),
+            SnowflakeQuote::quote(CsvOptions::DEFAULT_ENCLOSURE),
         );
-        $csvOptions[] = sprintf('ESCAPE_UNENCLOSED_FIELD = %s', QueryBuilder::quote('\\'));
-        $csvOptions[] = sprintf('COMPRESSION = %s', QueryBuilder::quote('GZIP'));
+        $csvOptions[] = sprintf('ESCAPE_UNENCLOSED_FIELD = %s', SnowflakeQuote::quote('\\'));
+        $csvOptions[] = sprintf('COMPRESSION = %s', SnowflakeQuote::quote('GZIP'));
         $csvOptions[] = 'NULL_IF=()';
 
         return sprintf(
