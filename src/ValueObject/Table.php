@@ -6,10 +6,9 @@ namespace Keboola\TelemetryData\ValueObject;
 
 class Table
 {
-    private string $schema;
-
-    private string $name;
-
+    /**
+     * @var string[]
+     */
     private array $requiredTableColumns = [
         'dst_proj_single',
         'dst_stack_single',
@@ -23,18 +22,19 @@ class Table
     /** @var Column[] $columns */
     private array $columns = [];
 
+    /**
+     * @param array{schema_name:string,name:string} $data
+     */
     public static function buildFromArray(array $data): self
     {
         return new self(
             $data['schema_name'],
-            $data['name']
+            $data['name'],
         );
     }
 
-    public function __construct(string $schema, string $name)
+    public function __construct(private string $schema, private string $name)
     {
-        $this->schema = $schema;
-        $this->name = $name;
     }
 
     public function addColumn(Column $column): void
@@ -52,16 +52,22 @@ class Table
         return $this->name;
     }
 
+    /**
+     * @return Column[]
+     */
     public function getColumns(): array
     {
         return $this->columns;
     }
 
+    /**
+     * @return string[]
+     */
     public function getMissingRequiredColumns(): array
     {
         return array_values(array_diff(
             $this->requiredTableColumns,
-            array_map(fn(Column $v) => $v->getName(), $this->columns)
+            array_map(fn(Column $v): string => $v->getName(), $this->columns),
         ));
     }
 }

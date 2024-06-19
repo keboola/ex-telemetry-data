@@ -4,23 +4,27 @@ declare(strict_types=1);
 
 namespace Keboola\TelemetryData\Tests;
 
+use Iterator;
 use Keboola\TelemetryData\Config;
 use Keboola\TelemetryData\ConfigDefinition;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
-use Iterator;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 
 class ConfigTest extends TestCase
 {
-    /** @dataProvider validConfigDataProvider */
+    /**
+     * @dataProvider validConfigDataProvider
+     * @param array<mixed> $configData
+     * @param array<mixed> $expectedData
+     */
     public function testValidConfig(array $configData, array $expectedData): void
     {
         $config = new Config(['parameters' => $configData], new ConfigDefinition());
 
         Assert::assertEquals(
             ['parameters' => $expectedData],
-            $config->getData()
+            $config->getData(),
         );
     }
 
@@ -29,7 +33,7 @@ class ConfigTest extends TestCase
         $this->expectException(InvalidConfigurationException::class);
         $this->expectExceptionMessage(
             'The value "unknownMode" is not allowed for path "root.parameters.mode". ' .
-            'Permissible values: "project", "organization"'
+            'Permissible values: "project", "organization"',
         );
         new Config(
             [
@@ -37,7 +41,7 @@ class ConfigTest extends TestCase
                     'mode' => 'unknownMode',
                 ],
             ],
-            new ConfigDefinition()
+            new ConfigDefinition(),
         );
     }
 

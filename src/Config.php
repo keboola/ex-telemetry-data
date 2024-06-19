@@ -32,7 +32,7 @@ class Config extends BaseConfig
 
     public function getMode(): string
     {
-        return $this->getValue(['parameters', 'mode']);
+        return $this->getStringValue(['parameters', 'mode']);
     }
 
     public function getKbcStackId(): string
@@ -104,6 +104,9 @@ class Config extends BaseConfig
         return (bool) $this->getValue(['parameters', 'incremental']);
     }
 
+    /**
+     * @return string[]
+     */
     private function tablesIgnoringIncrementalFetching(): array
     {
         return $this->getImageParameters()['tablesIgnoringIncrementalFetching'] ?? [];

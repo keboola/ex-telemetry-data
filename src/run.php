@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Keboola\Component\UserException;
 use Keboola\Component\Logger;
+use Keboola\Component\UserException;
 use Keboola\TelemetryData\Component;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -18,14 +18,14 @@ try {
     exit(1);
 } catch (Throwable $e) {
     $logger->critical(
-        get_class($e) . ':' . $e->getMessage(),
+        $e::class . ':' . $e->getMessage(),
         [
             'errFile' => $e->getFile(),
             'errLine' => $e->getLine(),
             'errCode' => $e->getCode(),
             'errTrace' => $e->getTraceAsString(),
-            'errPrevious' => is_object($e->getPrevious()) ? get_class($e->getPrevious()) : '',
-        ]
+            'errPrevious' => is_object($e->getPrevious()) ? $e->getPrevious()::class : '',
+        ],
     );
     exit(2);
 }

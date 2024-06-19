@@ -28,13 +28,13 @@ class DatadirTest extends DatadirTestCase
                 'port' => getenv('SNOWFLAKE_DB_PORT'),
                 'database' => getenv('SNOWFLAKE_DB_DATABASE'),
                 'warehouse' => getenv('SNOWFLAKE_DB_WAREHOUSE'),
-            ]
+            ],
         );
         $this->connection->query(
             sprintf(
                 'USE SCHEMA %s',
-                QueryBuilder::quoteIdentifier((string) getenv('SNOWFLAKE_DB_SCHEMA'))
-            )
+                QueryBuilder::quoteIdentifier((string) getenv('SNOWFLAKE_DB_SCHEMA')),
+            ),
         );
         parent::setUp();
     }
@@ -71,8 +71,8 @@ class DatadirTest extends DatadirTestCase
                 sprintf(
                     'DROP TABLE IF EXISTS %s.%s',
                     QueryBuilder::quoteIdentifier($item['schema_name']),
-                    QueryBuilder::quoteIdentifier($item['name'])
-                )
+                    QueryBuilder::quoteIdentifier($item['name']),
+                ),
             );
         }
     }
@@ -86,19 +86,22 @@ class DatadirTest extends DatadirTestCase
             $databaseTableName = substr(
                 $file->getFilename(),
                 0,
-                (int) strpos($file->getFilename(), '.csv.manifest')
+                (int) strpos($file->getFilename(), '.csv.manifest'),
             );
 
             $fileContent = json_decode(
                 (string) file_get_contents($file->getPathname()),
-                true
+                true,
+                512,
+                JSON_THROW_ON_ERROR,
             );
+            assert(is_array($fileContent));
 
             $columns = [];
             foreach ($fileContent['columns'] as $column) {
                 $columns[] = sprintf(
                     '%s VARCHAR(512)',
-                    QueryBuilder::quoteIdentifier($column)
+                    QueryBuilder::quoteIdentifier($column),
                 );
             }
 
@@ -110,12 +113,12 @@ SQL;
             $sql = sprintf(
                 $sqlTemplate,
                 QueryBuilder::quoteIdentifier($databaseTableName),
-                implode(',', $columns)
+                implode(',', $columns),
             );
 
             $this->connection->query($sql);
 
-            if (isset($fileContent['primary_key'])) {
+            if (array_key_exists('primary_key', $fileContent) && is_array($fileContent['primary_key'])) {
                 $sqlConstraintsTemplate = <<<SQL
 ALTER TABLE %s ADD CONSTRAINT PK_%s PRIMARY KEY (%s)
 SQL;
@@ -126,8 +129,11 @@ SQL;
                     $databaseTableName,
                     implode(
                         ', ',
-                        array_map(fn(string $v) => QueryBuilder::quoteIdentifier($v), $fileContent['primary_key'])
-                    )
+                        array_map(
+                            fn(string $v): string => QueryBuilder::quoteIdentifier($v),
+                            $fileContent['primary_key'],
+                        ),
+                    ),
                 );
 
                 $this->connection->query($sql);
@@ -140,18 +146,21 @@ SQL;
             $csvReader = new CsvReader(substr(
                 $file->getPathname(),
                 0,
-                (int) strpos($file->getPathname(), '.manifest')
+                (int) strpos($file->getPathname(), '.manifest'),
             ));
 
             while ($csvReader->current()) {
-                $row = array_map(function ($item) {
-                    return QueryBuilder::quote($item);
-                }, $csvReader->current());
+                $current = $csvReader->current();
+                assert(is_array($current));
+                $row = array_map(
+                    fn($item): string => QueryBuilder::quote($item),
+                    $current,
+                );
 
                 $sqlInsert = sprintf(
                     $sqlInsertTemplate,
                     QueryBuilder::quoteIdentifier($databaseTableName),
-                    implode(', ', $row)
+                    implode(', ', $row),
                 );
 
                 $this->connection->query($sqlInsert);
@@ -172,7 +181,7 @@ SQL;
         $json = (string) file_get_contents($path);
         try {
             file_put_contents($path, (string) json_encode(json_decode($json), JSON_PRETTY_PRINT));
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             // If a problem occurs, preserve the original contents
             file_put_contents($path, $json);
         }

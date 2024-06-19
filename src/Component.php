@@ -16,14 +16,14 @@ class Component extends BaseComponent
             $this->getLogger(),
             $this->getManifestManager(),
             $this->getDataDir(),
-            $this->getInputState()
+            $this->getInputState(),
         );
 
         $result = $extractor->extractData();
 
-        if (!empty($result)) {
+        if ($result !== []) {
             $this->writeOutputStateToFile($result);
-        } elseif (!empty($this->getInputState())) {
+        } elseif ($this->getInputState() !== []) {
             $this->writeOutputStateToFile($this->getInputState());
         }
     }
