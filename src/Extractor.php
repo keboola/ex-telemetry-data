@@ -8,6 +8,7 @@ use Keboola\Component\Manifest\ManifestManager;
 use Keboola\Component\Manifest\ManifestManager\Options\OutTableManifestOptions;
 use Keboola\Component\UserException;
 use Keboola\Csv\CsvOptions;
+use Keboola\Datatype\Definition\Exception\InvalidLengthException;
 use Keboola\Datatype\Definition\Exception\InvalidTypeException;
 use Keboola\Datatype\Definition\GenericStorage;
 use Keboola\Datatype\Definition\MySQL;
@@ -62,7 +63,7 @@ class Extractor
                 $lastRow = $this->getLastRow($table);
                 if ($lastRow) {
                     $result[$table->getName()] = [
-                        Config::STATE_INCREMENTAL_KEY => $lastRow[Column::INCREMENTAL_NAME],
+                        Config::STATE_INCREMENTAL_KEY => $lastRow,
                     ];
                 }
             }
@@ -77,12 +78,7 @@ class Extractor
         return $result;
     }
 
-    /**
-     * @return array{
-     *     dst_timestamp: string
-     * }|null
-     */
-    private function getLastRow(Table $table): ?array
+    private function getLastRow(Table $table): ?string
     {
         $sql = sprintf(
             'SELECT %s FROM %s.%s ORDER BY %s DESC LIMIT 1',
@@ -92,13 +88,12 @@ class Extractor
             SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME),
         );
 
-        $resultLastRow = $this->getRetryProxy()->call(fn(): array => $this->dbConnector->fetchAll($sql));
-        assert(
-            is_array($resultLastRow) && count($resultLastRow) === 1,
-            sprintf('getLastRow failed expected exactly one row from query "%s"', $sql),
+        $resultLastRow = $this->getRetryProxy()->call(
+            fn(): string|null => $this->dbConnector->fetchOneStringOrNull($sql),
         );
+        assert($resultLastRow === null || is_string($resultLastRow));
 
-        return $resultLastRow[0] ?? null;
+        return $resultLastRow;
     }
 
     private function generateSqlStatement(Table $table): string
@@ -189,7 +184,7 @@ class Extractor
                             'nullable' => $column->isNullable(),
                         ],
                     );
-                } catch (InvalidTypeException) {
+                } catch (InvalidTypeException|InvalidLengthException) {
                     $datatype = new GenericStorage(
                         $column->getDataType(),
                         [

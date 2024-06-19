@@ -140,6 +140,16 @@ class DbConnector
         return $this->connection->fetchAllAssociative($sql);
     }
 
+    public function fetchOneStringOrNull(string $sql): string|null
+    {
+        $result = $this->connection->fetchOne($sql);
+        if ($result === false) {
+            return null;
+        }
+        assert(is_string($result));
+        return $result;
+    }
+
     private function createSnowSqlConfig(): SplFileInfo
     {
         $hostParts = explode('.', $this->config->getDbHost());
