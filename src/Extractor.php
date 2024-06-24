@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Keboola\TelemetryData;
 
 use Keboola\Component\Manifest\ManifestManager;
+use Keboola\Component\Manifest\ManifestManager\Options\OutTableManifestOptions;
 use Keboola\Component\UserException;
 use Keboola\Csv\CsvOptions;
+use Keboola\Datatype\Definition\Exception\InvalidLengthException;
 use Keboola\Datatype\Definition\Exception\InvalidTypeException;
 use Keboola\Datatype\Definition\GenericStorage;
 use Keboola\Datatype\Definition\MySQL;
-use Keboola\SnowflakeDbAdapter\QueryBuilder;
+use Keboola\TableBackendUtils\Escaping\Snowflake\SnowflakeQuote;
 use Keboola\TelemetryData\Exception\SnowsqlException;
 use Keboola\TelemetryData\ValueObject\Column;
 use Keboola\TelemetryData\ValueObject\Table;
@@ -20,41 +22,27 @@ use Retry\BackOff\ExponentialBackOffPolicy;
 use Retry\Policy\SimpleRetryPolicy;
 use Retry\RetryProxy;
 use Symfony\Component\Filesystem\Filesystem;
-use Keboola\Component\Manifest\ManifestManager\Options\OutTableManifestOptions;
 use Symfony\Component\Process\Process;
 use Throwable;
 
 class Extractor
 {
-
-    private DbConnector $dbConnector;
-
-    private Config $config;
-
-    private LoggerInterface $logger;
-
-    private ManifestManager $manifestManager;
-
-    private string $datadir;
-
-    private array $inputState;
-
+    /**
+     * @param array<string, array{lastFetchedValue: string}> $inputState
+     */
     public function __construct(
-        DbConnector $dbConnector,
-        Config $config,
-        LoggerInterface $logger,
-        ManifestManager $manifestManager,
-        string $datadir,
-        array $inputState
+        private DbConnector $dbConnector,
+        private Config $config,
+        private LoggerInterface $logger,
+        private ManifestManager $manifestManager,
+        private string $datadir,
+        private array $inputState,
     ) {
-        $this->dbConnector = $dbConnector;
-        $this->config = $config;
-        $this->logger = $logger;
-        $this->datadir = $datadir;
-        $this->manifestManager = $manifestManager;
-        $this->inputState = $inputState;
     }
 
+    /**
+     * @return array<string, array{lastFetchedValue: string}>
+     */
     public function extractData(): array
     {
         $tableNamesForManifest = [];
@@ -65,9 +53,7 @@ class Extractor
             $this->logger->info(sprintf('Exporting to "%s"', $table->getName()));
             $retryProxy = $this->getRetryProxy();
             try {
-                $rows = $retryProxy->call(function () use ($table) {
-                    return $this->exportAndDownloadData($table);
-                });
+                $rows = $retryProxy->call(fn(): int => $this->exportAndDownloadData($table));
             } catch (Throwable $e) {
                 $message = sprintf('DB query failed: %s', $e->getMessage());
                 throw new UserException($message, 0, $e);
@@ -77,7 +63,7 @@ class Extractor
                 $lastRow = $this->getLastRow($table);
                 if ($lastRow) {
                     $result[$table->getName()] = [
-                        Config::STATE_INCREMENTAL_KEY => $lastRow[Column::INCREMENTAL_NAME],
+                        Config::STATE_INCREMENTAL_KEY => $lastRow,
                     ];
                 }
             }
@@ -92,29 +78,30 @@ class Extractor
         return $result;
     }
 
-    private function getLastRow(Table $table): ?array
+    private function getLastRow(Table $table): ?string
     {
         $sql = sprintf(
             'SELECT %s FROM %s.%s ORDER BY %s DESC LIMIT 1',
-            QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME),
-            QueryBuilder::quoteIdentifier($table->getSchema()),
-            QueryBuilder::quoteIdentifier($table->getName()),
-            QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME)
+            SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME),
+            SnowflakeQuote::quoteSingleIdentifier($table->getSchema()),
+            SnowflakeQuote::quoteSingleIdentifier($table->getName()),
+            SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME),
         );
 
-        $resultLastRow = $this->getRetryProxy()->call(function () use ($sql) {
-            return $this->dbConnector->fetchAll($sql);
-        });
+        $resultLastRow = $this->getRetryProxy()->call(
+            fn(): string|null => $this->dbConnector->fetchOneStringOrNull($sql),
+        );
+        assert($resultLastRow === null || is_string($resultLastRow));
 
-        return $resultLastRow[0] ?? null;
+        return $resultLastRow;
     }
 
     private function generateSqlStatement(Table $table): string
     {
         $sql = sprintf(
             'SELECT * FROM %s.%s',
-            QueryBuilder::quoteIdentifier($table->getSchema()),
-            QueryBuilder::quoteIdentifier($table->getName())
+            SnowflakeQuote::quoteSingleIdentifier($table->getSchema()),
+            SnowflakeQuote::quoteSingleIdentifier($table->getName()),
         );
 
         $whereStatement = [];
@@ -138,46 +125,48 @@ class Extractor
 
         $whereStatement[] = sprintf(
             '%s = %s',
-            QueryBuilder::quoteIdentifier($projectColumnName),
-            QueryBuilder::quote($this->config->getProjectId())
+            SnowflakeQuote::quoteSingleIdentifier($projectColumnName),
+            SnowflakeQuote::quote($this->config->getProjectId()),
         );
         $whereStatement[] = sprintf(
             '%s = %s',
-            QueryBuilder::quoteIdentifier($stackColumnName),
-            QueryBuilder::quote($this->config->getKbcStackId())
+            SnowflakeQuote::quoteSingleIdentifier($stackColumnName),
+            SnowflakeQuote::quote($this->config->getKbcStackId()),
         );
 
         if ($this->config->isIncrementalFetching($table->getName())) {
             if (isset($this->inputState[$table->getName()]['lastFetchedValue'])) {
                 $whereStatement[] = sprintf(
                     '%s >= %s',
-                    QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME),
-                    QueryBuilder::quote($this->inputState[$table->getName()]['lastFetchedValue'])
+                    SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME),
+                    SnowflakeQuote::quote($this->inputState[$table->getName()]['lastFetchedValue']),
                 );
             }
-            $orderStatement = QueryBuilder::quoteIdentifier(Column::INCREMENTAL_NAME);
+            $orderStatement = SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME);
         }
 
         $sql .= sprintf(
             ' WHERE %s',
-            implode(' AND ', $whereStatement)
+            implode(' AND ', $whereStatement),
         );
 
-        if ($orderStatement) {
+        if ($orderStatement !== '' && $orderStatement !== '0') {
             $sql .= ' ORDER BY ' . $orderStatement;
         }
 
         $this->logger->info(sprintf(
             'Run query "%s"',
-            $sql
+            $sql,
         ));
 
         return $sql;
     }
 
+    /**
+     * @param Table[] $tableNames
+     */
     private function createManifestMetadata(array $tableNames): void
     {
-        /** @var Table[] $tableStructures */
         $tableStructures = $this->dbConnector->getTables($tableNames);
 
         foreach ($tableStructures as $tableStructure) {
@@ -193,14 +182,14 @@ class Extractor
                         [
                             'length' => $column->getLength(),
                             'nullable' => $column->isNullable(),
-                        ]
+                        ],
                     );
-                } catch (InvalidTypeException $e) {
+                } catch (InvalidTypeException|InvalidLengthException) {
                     $datatype = new GenericStorage(
                         $column->getDataType(),
                         [
                             'nullable' => $column->isNullable(),
-                        ]
+                        ],
                     );
                 }
                 $columnsMetadata[$column->getName()] = $datatype->toMetadata();
@@ -224,7 +213,7 @@ class Extractor
             ;
             $this->manifestManager->writeTableManifest(
                 sprintf('%s.csv', $tableStructure->getName()),
-                $tableManifestOptions
+                $tableManifestOptions,
             );
         }
     }
@@ -235,11 +224,11 @@ class Extractor
             '%s_%s_%s',
             $table->getName(),
             $this->config->getProjectId(),
-            $this->config->getKbcStackId()
+            $this->config->getKbcStackId(),
         );
         $copyCommand = $this->generateCopyCommand(
             $tmpTableName,
-            $this->generateSqlStatement($table)
+            $this->generateSqlStatement($table),
         );
 
         $result = $this->dbConnector->fetchAll($copyCommand);
@@ -256,17 +245,17 @@ class Extractor
         $this->logger->info('Downloading data from Snowflake');
 
         $sqls = [];
-        $sqls[] = sprintf('USE WAREHOUSE %s;', QueryBuilder::quoteIdentifier($this->config->getDbWarehouse()));
-        $sqls[] = sprintf('USE DATABASE %s;', QueryBuilder::quoteIdentifier($this->config->getDbDatabase()));
+        $sqls[] = sprintf('USE WAREHOUSE %s;', SnowflakeQuote::quoteSingleIdentifier($this->config->getDbWarehouse()));
+        $sqls[] = sprintf('USE DATABASE %s;', SnowflakeQuote::quoteSingleIdentifier($this->config->getDbDatabase()));
         $sqls[] = sprintf(
             'USE SCHEMA %s.%s;',
-            QueryBuilder::quoteIdentifier($this->config->getDbDatabase()),
-            QueryBuilder::quoteIdentifier($this->config->getDbSchema())
+            SnowflakeQuote::quoteSingleIdentifier($this->config->getDbDatabase()),
+            SnowflakeQuote::quoteSingleIdentifier($this->config->getDbSchema()),
         );
         $sqls[] = sprintf(
             'GET @~/%s file://%s;',
             $tmpTableName,
-            $outputDataDir
+            $outputDataDir,
         );
 
         $snowSqlFile = (new Temp())->createTmpFile('snowsql.sql');
@@ -275,7 +264,7 @@ class Extractor
         $command = sprintf(
             'snowsql --noup --config %s -c downloader -f %s',
             $this->dbConnector->getSnowSqlConfigFile(),
-            $snowSqlFile
+            $snowSqlFile,
         );
 
         $process = Process::fromShellCommandline($command);
@@ -287,7 +276,7 @@ class Extractor
             $this->logger->error(sprintf('Snowsql error: %s', $process->getErrorOutput()));
             throw new SnowsqlException(sprintf(
                 'File download error occurred processing [%s]',
-                $table->getName()
+                $table->getName(),
             ));
         }
 
@@ -304,7 +293,7 @@ class Extractor
                 $this->datadir,
                 'out',
                 'tables',
-            ]
+            ],
         );
         $fs = new Filesystem();
         if (!$fs->exists($outputDir)) {
@@ -318,7 +307,7 @@ class Extractor
         $filename = sprintf(
             '%s/%s.csv',
             $this->ensureOutputTableDir(),
-            $table->getName()
+            $table->getName(),
         );
 
         $fs = new Filesystem();
@@ -330,14 +319,14 @@ class Extractor
     private function generateCopyCommand(string $stageTmpPath, string $query): string
     {
         $csvOptions = [];
-        $csvOptions[] = sprintf('FIELD_DELIMITER = %s', QueryBuilder::quote(CsvOptions::DEFAULT_DELIMITER));
+        $csvOptions[] = sprintf('FIELD_DELIMITER = %s', SnowflakeQuote::quote(CsvOptions::DEFAULT_DELIMITER));
         $csvOptions[] = sprintf(
             'FIELD_OPTIONALLY_ENCLOSED_BY = %s',
-            QueryBuilder::quote(CsvOptions::DEFAULT_ENCLOSURE)
+            SnowflakeQuote::quote(CsvOptions::DEFAULT_ENCLOSURE),
         );
-        $csvOptions[] = sprintf('ESCAPE_UNENCLOSED_FIELD = %s', QueryBuilder::quote('\\'));
-        $csvOptions[] = sprintf('COMPRESSION = %s', QueryBuilder::quote('GZIP'));
-        $csvOptions[] = sprintf('NULL_IF=()');
+        $csvOptions[] = sprintf('ESCAPE_UNENCLOSED_FIELD = %s', SnowflakeQuote::quote('\\'));
+        $csvOptions[] = sprintf('COMPRESSION = %s', SnowflakeQuote::quote('GZIP'));
+        $csvOptions[] = 'NULL_IF=()';
 
         return sprintf(
             '
@@ -352,7 +341,7 @@ class Extractor
             ',
             $stageTmpPath,
             rtrim(trim($query), ';'),
-            implode(' ', $csvOptions)
+            implode(' ', $csvOptions),
         );
     }
 
@@ -361,10 +350,10 @@ class Extractor
         return new RetryProxy(
             new SimpleRetryPolicy(
                 Config::RETRY_MAX_ATTEMPTS,
-                ['Exception', 'SnowsqlException']
+                ['Exception', 'SnowsqlException'],
             ),
             new ExponentialBackOffPolicy(Config::RETRY_DEFAULT_BACKOFF_INTERVAL),
-            $this->logger
+            $this->logger,
         );
     }
 }

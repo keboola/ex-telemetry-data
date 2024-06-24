@@ -1,7 +1,7 @@
-FROM php:7.4-cli
+FROM php:8.3-cli-bullseye
 
-ARG SNOWFLAKE_ODBC_VERSION=2.25.9
-ARG SNOWFLAKE_SNOWSQL_VERSION=1.2.24
+ARG SNOWFLAKE_ODBC_VERSION=2.25.12
+ARG SNOWFLAKE_SNOWSQL_VERSION=1.3.0
 ARG SNOWFLAKE_GPG_KEY=630D9F3CAB551AF3
 ARG COMPOSER_FLAGS="--prefer-dist --no-interaction"
 ARG DEBIAN_FRONTEND=noninteractive
@@ -35,23 +35,27 @@ RUN apt-get update && apt-get install -y \
 RUN docker-php-ext-configure intl \
     && docker-php-ext-install intl
 
-# Install PHP odbc extension
-# https://github.com/docker-library/php/issues/103
-RUN set -x \
-    && docker-php-source extract \
-    && cd /usr/src/php/ext/odbc \
-    && phpize \
-    && sed -ri 's@^ *test +"\$PHP_.*" *= *"no" *&& *PHP_.*=yes *$@#&@g' configure \
-    && ./configure --with-unixODBC=shared,/usr \
-    && docker-php-ext-install odbc \
-    && docker-php-source delete
+# Snowflake ODBC
+# https://github.com/docker-library/php/issues/103#issuecomment-353674490
+RUN set -ex; \
+    docker-php-source extract; \
+    { \
+        echo '# https://github.com/docker-library/php/issues/103#issuecomment-353674490'; \
+        echo 'AC_DEFUN([PHP_ALWAYS_SHARED],[])dnl'; \
+        echo; \
+        cat /usr/src/php/ext/odbc/config.m4; \
+    } > temp.m4; \
+    mv temp.m4 /usr/src/php/ext/odbc/config.m4; \
+    docker-php-ext-configure odbc --with-unixODBC=shared,/usr; \
+    docker-php-ext-install odbc; \
+    docker-php-source delete
 
 #snoflake download + verify package
 COPY docker/driver/snowflake-policy.pol /etc/debsig/policies/$SNOWFLAKE_GPG_KEY/generic.pol
 COPY docker/driver/simba.snowflake.ini /usr/lib/snowflake/odbc/lib/simba.snowflake.ini
 ADD https://sfc-repo.azure.snowflakecomputing.com/odbc/linux/$SNOWFLAKE_ODBC_VERSION/snowflake-odbc-$SNOWFLAKE_ODBC_VERSION.x86_64.deb /tmp/snowflake-odbc.deb
-ADD https://sfc-repo.azure.snowflakecomputing.com/snowsql/bootstrap/1.2/linux_x86_64/snowsql-$SNOWFLAKE_SNOWSQL_VERSION-linux_x86_64.bash /usr/bin/snowsql-linux_x86_64.bash
-ADD https://sfc-repo.azure.snowflakecomputing.com/snowsql/bootstrap/1.2/linux_x86_64/snowsql-$SNOWFLAKE_SNOWSQL_VERSION-linux_x86_64.bash.sig /tmp/snowsql-linux_x86_64.bash.sig
+ADD https://sfc-repo.azure.snowflakecomputing.com/snowsql/bootstrap/1.3/linux_x86_64/snowsql-$SNOWFLAKE_SNOWSQL_VERSION-linux_x86_64.bash /usr/bin/snowsql-linux_x86_64.bash
+ADD https://sfc-repo.azure.snowflakecomputing.com/snowsql/bootstrap/1.3/linux_x86_64/snowsql-$SNOWFLAKE_SNOWSQL_VERSION-linux_x86_64.bash.sig /tmp/snowsql-linux_x86_64.bash.sig
 
 # snowflake - charset settings
 ENV LANG en_US.UTF-8
@@ -60,6 +64,8 @@ ENV LC_ALL=C.UTF-8
 RUN mkdir -p ~/.gnupg \
     && chmod 700 ~/.gnupg \
     && echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf \
+    && mkdir -p /etc/gnupg \
+    && echo "allow-weak-digest-algos" >> /etc/gnupg/gpg.conf \
     && mkdir -p /usr/share/debsig/keyrings/$SNOWFLAKE_GPG_KEY \
     && if ! gpg --keyserver hkp://keys.gnupg.net --recv-keys $SNOWFLAKE_GPG_KEY; then \
         gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys $SNOWFLAKE_GPG_KEY;  \

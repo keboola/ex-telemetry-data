@@ -4,22 +4,26 @@ declare(strict_types=1);
 
 namespace Keboola\TelemetryData\Tests;
 
+use Iterator;
 use Keboola\TelemetryData\ValueObject\Column;
 use Keboola\TelemetryData\ValueObject\Table;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
-use Iterator;
 
 class ValueObjectTest extends TestCase
 {
-    /** @dataProvider invalidColumnsConfig */
+    /**
+     * @dataProvider invalidColumnsConfig
+     * @param string[] $columns
+     * @param string[] $missingColumns
+     */
     public function testTableObject(array $columns, array $missingColumns): void
     {
         $table = Table::buildFromArray(
             [
                 'schema_name' => 'test_schema',
                 'name' => 'test_name',
-            ]
+            ],
         );
 
         Assert::assertEquals('test_schema', $table->getSchema());
@@ -36,7 +40,7 @@ class ValueObjectTest extends TestCase
                     'DATA_TYPE' => 'varchar',
                     'TABLE_SCHEMA' => 'test_schema',
                     'TABLE_NAME' => 'test_name',
-                ]
+                ],
             );
             $table->addColumn($column);
         }
@@ -56,7 +60,7 @@ class ValueObjectTest extends TestCase
                 'DATA_TYPE' => 'varchar',
                 'TABLE_SCHEMA' => 'test_schema',
                 'TABLE_NAME' => 'test_name',
-            ]
+            ],
         );
 
         Assert::assertEquals(Column::PROJECT_SINGLE_NAME, $column->getName());

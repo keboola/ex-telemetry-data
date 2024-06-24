@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Keboola\TelemetryData\FunctionalTests;
 
+use Doctrine\DBAL\Connection;
 use Keboola\Csv\CsvReader;
 use Keboola\DatadirTests\DatadirTestCase;
 use Keboola\DatadirTests\DatadirTestSpecificationInterface;
-use Keboola\SnowflakeDbAdapter\Connection;
-use Keboola\SnowflakeDbAdapter\QueryBuilder;
+use Keboola\TableBackendUtils\Connection\Snowflake\SnowflakeConnectionFactory;
+use Keboola\TableBackendUtils\Escaping\Snowflake\SnowflakeQuote;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Process\Process;
@@ -20,21 +21,21 @@ class DatadirTest extends DatadirTestCase
 
     public function setUp(): void
     {
-        $this->connection = new Connection(
+        $this->connection = SnowflakeConnectionFactory::getConnection(
+            (string) getenv('SNOWFLAKE_DB_HOST'),
+            (string) getenv('SNOWFLAKE_DB_USER'),
+            (string) getenv('SNOWFLAKE_DB_PASSWORD'),
             [
-                'host' => getenv('SNOWFLAKE_DB_HOST'),
-                'user' => getenv('SNOWFLAKE_DB_USER'),
-                'password' => getenv('SNOWFLAKE_DB_PASSWORD'),
-                'port' => getenv('SNOWFLAKE_DB_PORT'),
-                'database' => getenv('SNOWFLAKE_DB_DATABASE'),
-                'warehouse' => getenv('SNOWFLAKE_DB_WAREHOUSE'),
-            ]
+                'port' => (string) getenv('SNOWFLAKE_DB_PORT'),
+                'warehouse' => (string) getenv('SNOWFLAKE_DB_WAREHOUSE'),
+                'database' => (string) getenv('SNOWFLAKE_DB_DATABASE'),
+            ],
         );
-        $this->connection->query(
+        $this->connection->executeStatement(
             sprintf(
                 'USE SCHEMA %s',
-                QueryBuilder::quoteIdentifier((string) getenv('SNOWFLAKE_DB_SCHEMA'))
-            )
+                SnowflakeQuote::quoteSingleIdentifier((string) getenv('SNOWFLAKE_DB_SCHEMA')),
+            ),
         );
         parent::setUp();
     }
@@ -65,14 +66,15 @@ class DatadirTest extends DatadirTestCase
     {
         $sql = 'SHOW TABLES IN SCHEMA';
 
-        $items = $this->connection->fetchAll($sql);
+        $items = $this->connection->fetchAllAssociative($sql);
+        /** @var array{schema_name:string,name:string} $item */
         foreach ($items as $item) {
-            $this->connection->query(
+            $this->connection->executeQuery(
                 sprintf(
                     'DROP TABLE IF EXISTS %s.%s',
-                    QueryBuilder::quoteIdentifier($item['schema_name']),
-                    QueryBuilder::quoteIdentifier($item['name'])
-                )
+                    SnowflakeQuote::quoteSingleIdentifier($item['schema_name']),
+                    SnowflakeQuote::quoteSingleIdentifier($item['name']),
+                ),
             );
         }
     }
@@ -86,19 +88,22 @@ class DatadirTest extends DatadirTestCase
             $databaseTableName = substr(
                 $file->getFilename(),
                 0,
-                (int) strpos($file->getFilename(), '.csv.manifest')
+                (int) strpos($file->getFilename(), '.csv.manifest'),
             );
 
             $fileContent = json_decode(
                 (string) file_get_contents($file->getPathname()),
-                true
+                true,
+                512,
+                JSON_THROW_ON_ERROR,
             );
+            assert(is_array($fileContent));
 
             $columns = [];
             foreach ($fileContent['columns'] as $column) {
                 $columns[] = sprintf(
                     '%s VARCHAR(512)',
-                    QueryBuilder::quoteIdentifier($column)
+                    SnowflakeQuote::quoteSingleIdentifier($column),
                 );
             }
 
@@ -109,28 +114,31 @@ CREATE TABLE %s (
 SQL;
             $sql = sprintf(
                 $sqlTemplate,
-                QueryBuilder::quoteIdentifier($databaseTableName),
-                implode(',', $columns)
+                SnowflakeQuote::quoteSingleIdentifier($databaseTableName),
+                implode(',', $columns),
             );
 
-            $this->connection->query($sql);
+            $this->connection->executeQuery($sql);
 
-            if (isset($fileContent['primary_key'])) {
+            if (array_key_exists('primary_key', $fileContent) && is_array($fileContent['primary_key'])) {
                 $sqlConstraintsTemplate = <<<SQL
 ALTER TABLE %s ADD CONSTRAINT PK_%s PRIMARY KEY (%s)
 SQL;
 
                 $sql = sprintf(
                     $sqlConstraintsTemplate,
-                    QueryBuilder::quoteIdentifier($databaseTableName),
+                    SnowflakeQuote::quoteSingleIdentifier($databaseTableName),
                     $databaseTableName,
                     implode(
                         ', ',
-                        array_map(fn(string $v) => QueryBuilder::quoteIdentifier($v), $fileContent['primary_key'])
-                    )
+                        array_map(
+                            fn(string $v): string => SnowflakeQuote::quoteSingleIdentifier($v),
+                            $fileContent['primary_key'],
+                        ),
+                    ),
                 );
 
-                $this->connection->query($sql);
+                $this->connection->executeQuery($sql);
             }
 
             $sqlInsertTemplate = <<<SQL
@@ -140,21 +148,24 @@ SQL;
             $csvReader = new CsvReader(substr(
                 $file->getPathname(),
                 0,
-                (int) strpos($file->getPathname(), '.manifest')
+                (int) strpos($file->getPathname(), '.manifest'),
             ));
 
             while ($csvReader->current()) {
-                $row = array_map(function ($item) {
-                    return QueryBuilder::quote($item);
-                }, $csvReader->current());
+                $current = $csvReader->current();
+                assert(is_array($current));
+                $row = array_map(
+                    fn($item): string => SnowflakeQuote::quote($item),
+                    $current,
+                );
 
                 $sqlInsert = sprintf(
                     $sqlInsertTemplate,
-                    QueryBuilder::quoteIdentifier($databaseTableName),
-                    implode(', ', $row)
+                    SnowflakeQuote::quoteSingleIdentifier($databaseTableName),
+                    implode(', ', $row),
                 );
 
-                $this->connection->query($sqlInsert);
+                $this->connection->executeQuery($sqlInsert);
                 $csvReader->next();
             }
         }
@@ -172,7 +183,7 @@ SQL;
         $json = (string) file_get_contents($path);
         try {
             file_put_contents($path, (string) json_encode(json_decode($json), JSON_PRETTY_PRINT));
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             // If a problem occurs, preserve the original contents
             file_put_contents($path, $json);
         }

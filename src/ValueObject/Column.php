@@ -26,24 +26,20 @@ class Column
         'LONGTEXT',
     ];
 
-    private string $name;
-
-    private int $characterMaximumLength;
-
-    private int $numericPrecision;
-
-    private int $numericScale;
-
-    private bool $isNullable;
-
     private bool $isPrimaryKey = false;
 
-    private string $dataType;
-
-    private string $tableSchema;
-
-    private string $tableName;
-
+    /**
+     * @param array{
+     *     COLUMN_NAME: string,
+     *     CHARACTER_MAXIMUM_LENGTH: string|int,
+     *     NUMERIC_PRECISION: string|int,
+     *     NUMERIC_SCALE: string|int,
+     *     IS_NULLABLE: string,
+     *     DATA_TYPE: string,
+     *     TABLE_SCHEMA: string,
+     *     TABLE_NAME: string,
+     * } $data
+     */
     public static function buildFromArray(array $data): self
     {
         return new self(
@@ -51,31 +47,23 @@ class Column
             (int) $data['CHARACTER_MAXIMUM_LENGTH'],
             (int) $data['NUMERIC_PRECISION'],
             (int) $data['NUMERIC_SCALE'],
-            $data['IS_NULLABLE'] === 'NO' ? false : true,
+            $data['IS_NULLABLE'] !== 'NO',
             $data['DATA_TYPE'],
             $data['TABLE_SCHEMA'],
-            $data['TABLE_NAME']
+            $data['TABLE_NAME'],
         );
     }
 
     public function __construct(
-        string $name,
-        int $characterMaximumLength,
-        int $numericPrecision,
-        int $numericScale,
-        bool $isNullable,
-        string $dataType,
-        string $tableSchema,
-        string $tableName
+        private string $name,
+        private int $characterMaximumLength,
+        private int $numericPrecision,
+        private int $numericScale,
+        private bool $isNullable,
+        private string $dataType,
+        private string $tableSchema,
+        private string $tableName,
     ) {
-        $this->name = $name;
-        $this->characterMaximumLength = $characterMaximumLength;
-        $this->numericPrecision = $numericPrecision;
-        $this->numericScale = $numericScale;
-        $this->isNullable = $isNullable;
-        $this->dataType = $dataType;
-        $this->tableSchema = $tableSchema;
-        $this->tableName = $tableName;
     }
 
     public function setIsPrimaryKey(bool $isPrimaryKey): self
@@ -129,6 +117,13 @@ class Column
         return $this->dataType;
     }
 
+    /**
+     * @return array{
+     *     character_maximum: int|null,
+     *     numeric_precision: int|null,
+     *     numeric_scale: int|null
+     * }
+     */
     public function getLength(): ?array
     {
         if (in_array(strtoupper($this->getDataType()), self::TYPE_WITHOUT_LENGTH)) {

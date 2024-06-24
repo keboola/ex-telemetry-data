@@ -1,7 +1,5 @@
 # Telemetry data Extractor
 
-[![Build Status](https://travis-ci.com/keboola/ex-telemetry-data.svg?branch=master)](https://travis-ci.com/keboola/ex-telemetry-data)
-
 > Exports telemetry data for specified project 
 
 # Usage
