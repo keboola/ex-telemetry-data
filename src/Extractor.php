@@ -178,7 +178,6 @@ class Extractor
             $tableMetadata = [
                 'KBC.name' => $tableStructure->getName(),
                 'KBC.sanitizedName' => BuilderHelper::sanitizeName($tableStructure->getName()),
-                'KBC.schema' => $tableStructure->getSchema(),
                 'KBC.datatype.backend' => 'snowflake',
             ];
 

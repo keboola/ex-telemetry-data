@@ -1,6 +1,20 @@
 {
     "destination": "ignoreInc",
-    "primary_key": [],
+    "incremental": false,
+    "metadata": [
+        {
+            "key": "KBC.name",
+            "value": "ignoreInc"
+        },
+        {
+            "key": "KBC.sanitizedName",
+            "value": "ignoreInc"
+        },
+        {
+            "key": "KBC.datatype.backend",
+            "value": "snowflake"
+        }
+    ],
     "columns": [
         "dst_proj_single",
         "dst_stack_single",
@@ -11,15 +25,24 @@
         "dst_timestamp",
         "sample_data"
     ],
-    "incremental": false,
-    "metadata": [
-        {
-            "key": "KBC.name",
-            "value": "ignoreInc"
-        }
-    ],
     "column_metadata": {
         "dst_proj_single": [
+            {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.description",
+                "value": ""
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            },
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
@@ -35,6 +58,22 @@
         ],
         "dst_stack_single": [
             {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.description",
+                "value": ""
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            },
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
+            {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
             },
@@ -48,6 +87,22 @@
             }
         ],
         "dst_proj_company": [
+            {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.description",
+                "value": ""
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            },
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
@@ -63,6 +118,22 @@
         ],
         "dst_stack_company": [
             {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.description",
+                "value": ""
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            },
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
+            {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
             },
@@ -76,6 +147,22 @@
             }
         ],
         "dst_proj_ac": [
+            {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.description",
+                "value": ""
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            },
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
@@ -91,6 +178,22 @@
         ],
         "dst_stack_ac": [
             {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.description",
+                "value": ""
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            },
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
+            {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
             },
@@ -105,6 +208,22 @@
         ],
         "dst_timestamp": [
             {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.description",
+                "value": ""
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            },
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
+            {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
             },
@@ -118,6 +237,22 @@
             }
         ],
         "sample_data": [
+            {
+                "key": "KBC.datatype.nullable",
+                "value": true
+            },
+            {
+                "key": "KBC.description",
+                "value": ""
+            },
+            {
+                "key": "KBC.datatype.basetype",
+                "value": "STRING"
+            },
+            {
+                "key": "KBC.datatype.type",
+                "value": "TEXT"
+            },
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
