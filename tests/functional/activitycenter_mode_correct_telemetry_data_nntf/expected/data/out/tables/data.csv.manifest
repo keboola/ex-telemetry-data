@@ -1,0 +1,163 @@
+{
+    "destination": "data",
+    "incremental": false,
+    "table_metadata": {
+        "KBC.name": "data",
+        "KBC.sanitizedName": "data",
+        "KBC.datatype.backend": "snowflake"
+    },
+    "schema": [
+        {
+            "nullable": true,
+            "primary_key": false,
+            "description": "",
+            "metadata": {
+                "KBC.datatype.type": "TEXT",
+                "KBC.datatype.nullable": true,
+                "KBC.datatype.basetype": "STRING"
+            },
+            "name": "dst_proj_single",
+            "data_type": {
+                "base": {
+                    "type": "STRING"
+                },
+                "snowflake": {
+                    "type": "TEXT"
+                }
+            }
+        },
+        {
+            "nullable": true,
+            "primary_key": false,
+            "description": "",
+            "metadata": {
+                "KBC.datatype.type": "TEXT",
+                "KBC.datatype.nullable": true,
+                "KBC.datatype.basetype": "STRING"
+            },
+            "name": "dst_stack_single",
+            "data_type": {
+                "base": {
+                    "type": "STRING"
+                },
+                "snowflake": {
+                    "type": "TEXT"
+                }
+            }
+        },
+        {
+            "nullable": true,
+            "primary_key": false,
+            "description": "",
+            "metadata": {
+                "KBC.datatype.type": "TEXT",
+                "KBC.datatype.nullable": true,
+                "KBC.datatype.basetype": "STRING"
+            },
+            "name": "dst_proj_company",
+            "data_type": {
+                "base": {
+                    "type": "STRING"
+                },
+                "snowflake": {
+                    "type": "TEXT"
+                }
+            }
+        },
+        {
+            "nullable": true,
+            "primary_key": false,
+            "description": "",
+            "metadata": {
+                "KBC.datatype.type": "TEXT",
+                "KBC.datatype.nullable": true,
+                "KBC.datatype.basetype": "STRING"
+            },
+            "name": "dst_stack_company",
+            "data_type": {
+                "base": {
+                    "type": "STRING"
+                },
+                "snowflake": {
+                    "type": "TEXT"
+                }
+            }
+        },
+        {
+            "nullable": true,
+            "primary_key": false,
+            "description": "",
+            "metadata": {
+                "KBC.datatype.type": "TEXT",
+                "KBC.datatype.nullable": true,
+                "KBC.datatype.basetype": "STRING"
+            },
+            "name": "dst_proj_ac",
+            "data_type": {
+                "base": {
+                    "type": "STRING"
+                },
+                "snowflake": {
+                    "type": "TEXT"
+                }
+            }
+        },
+        {
+            "nullable": true,
+            "primary_key": false,
+            "description": "",
+            "metadata": {
+                "KBC.datatype.type": "TEXT",
+                "KBC.datatype.nullable": true,
+                "KBC.datatype.basetype": "STRING"
+            },
+            "name": "dst_stack_ac",
+            "data_type": {
+                "base": {
+                    "type": "STRING"
+                },
+                "snowflake": {
+                    "type": "TEXT"
+                }
+            }
+        },
+        {
+            "nullable": true,
+            "primary_key": false,
+            "description": "",
+            "metadata": {
+                "KBC.datatype.type": "TEXT",
+                "KBC.datatype.nullable": true,
+                "KBC.datatype.basetype": "STRING"
+            },
+            "name": "dst_timestamp",
+            "data_type": {
+                "base": {
+                    "type": "STRING"
+                },
+                "snowflake": {
+                    "type": "TEXT"
+                }
+            }
+        },
+        {
+            "nullable": true,
+            "primary_key": false,
+            "description": "",
+            "metadata": {
+                "KBC.datatype.type": "TEXT",
+                "KBC.datatype.nullable": true,
+                "KBC.datatype.basetype": "STRING"
+            },
+            "name": "sample_data",
+            "data_type": {
+                "base": {
+                    "type": "STRING"
+                },
+                "snowflake": {
+                    "type": "TEXT"
+                }
+            }
+        }
+    ]
+}
