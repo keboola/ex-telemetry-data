@@ -244,7 +244,7 @@ class Extractor
             $dataTypes,
             $datatype->isNullable(),
             $column->isPrimaryKey(),
-            '',
+            null,
             $columnMetadata,
         );
     }

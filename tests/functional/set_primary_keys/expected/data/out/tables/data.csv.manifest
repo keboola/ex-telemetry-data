@@ -35,10 +35,6 @@
                 "value": true
             },
             {
-                "key": "KBC.description",
-                "value": ""
-            },
-            {
                 "key": "KBC.datatype.basetype",
                 "value": "STRING"
             },
@@ -63,10 +59,6 @@
             {
                 "key": "KBC.datatype.nullable",
                 "value": true
-            },
-            {
-                "key": "KBC.description",
-                "value": ""
             },
             {
                 "key": "KBC.datatype.basetype",
@@ -95,10 +87,6 @@
                 "value": true
             },
             {
-                "key": "KBC.description",
-                "value": ""
-            },
-            {
                 "key": "KBC.datatype.basetype",
                 "value": "STRING"
             },
@@ -123,10 +111,6 @@
             {
                 "key": "KBC.datatype.nullable",
                 "value": true
-            },
-            {
-                "key": "KBC.description",
-                "value": ""
             },
             {
                 "key": "KBC.datatype.basetype",
@@ -155,10 +139,6 @@
                 "value": true
             },
             {
-                "key": "KBC.description",
-                "value": ""
-            },
-            {
                 "key": "KBC.datatype.basetype",
                 "value": "STRING"
             },
@@ -183,10 +163,6 @@
             {
                 "key": "KBC.datatype.nullable",
                 "value": true
-            },
-            {
-                "key": "KBC.description",
-                "value": ""
             },
             {
                 "key": "KBC.datatype.basetype",
@@ -215,10 +191,6 @@
                 "value": true
             },
             {
-                "key": "KBC.description",
-                "value": ""
-            },
-            {
                 "key": "KBC.datatype.basetype",
                 "value": "STRING"
             },
@@ -243,10 +215,6 @@
             {
                 "key": "KBC.datatype.nullable",
                 "value": true
-            },
-            {
-                "key": "KBC.description",
-                "value": ""
             },
             {
                 "key": "KBC.datatype.basetype",
