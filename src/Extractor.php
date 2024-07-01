@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Keboola\TelemetryData;
 
 use Keboola\Component\Manifest\ManifestManager;
-use Keboola\Component\Manifest\ManifestManager\Options\OutTableManifestOptions;
+use Keboola\Component\Manifest\ManifestManager\Options\OutTable\ManifestOptionsSchema;
 use Keboola\Component\UserException;
 use Keboola\Csv\CsvOptions;
 use Keboola\Datatype\Definition\Exception\InvalidLengthException;
 use Keboola\Datatype\Definition\Exception\InvalidTypeException;
 use Keboola\Datatype\Definition\GenericStorage;
-use Keboola\Datatype\Definition\MySQL;
+use Keboola\Datatype\Definition\Snowflake;
+use Keboola\DbExtractor\TableResultFormat\Metadata\Builder\BuilderHelper;
 use Keboola\TableBackendUtils\Escaping\Snowflake\SnowflakeQuote;
 use Keboola\TelemetryData\Exception\SnowsqlException;
 use Keboola\TelemetryData\ValueObject\Column;
@@ -21,6 +22,7 @@ use Psr\Log\LoggerInterface;
 use Retry\BackOff\ExponentialBackOffPolicy;
 use Retry\Policy\SimpleRetryPolicy;
 use Retry\RetryProxy;
+use RuntimeException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -48,7 +50,6 @@ class Extractor
         $tableNamesForManifest = [];
         $result = [];
 
-        /** @var Table $table */
         foreach ($this->dbConnector->getTables() as $table) {
             $this->logger->info(sprintf('Exporting to "%s"', $table->getName()));
             $retryProxy = $this->getRetryProxy();
@@ -170,52 +171,82 @@ class Extractor
         $tableStructures = $this->dbConnector->getTables($tableNames);
 
         foreach ($tableStructures as $tableStructure) {
-            $tableMetadata = [];
-            $columnsMetadata = [];
-            $columnNames = [];
-            $primaryKeys = [];
+            $schema = [];
             foreach ($tableStructure->getColumns() as $column) {
-                $columnNames[] = $column->getName();
-                try {
-                    $datatype = new MySQL(
-                        $column->getDataType(),
-                        [
-                            'length' => $column->getLength(),
-                            'nullable' => $column->isNullable(),
-                        ],
-                    );
-                } catch (InvalidTypeException|InvalidLengthException) {
-                    $datatype = new GenericStorage(
-                        $column->getDataType(),
-                        [
-                            'nullable' => $column->isNullable(),
-                        ],
-                    );
-                }
-                $columnsMetadata[$column->getName()] = $datatype->toMetadata();
-                if ($column->isPrimaryKey()) {
-                    $primaryKeys[] = $column->getName();
-                }
+                $schema[] = $this->createManifestOptionsSchema($column);
             }
-            $tableMetadata[] = [
-                'key' => 'KBC.name',
-                'value' => $tableStructure->getName(),
+            $tableMetadata = [
+                'KBC.name' => $tableStructure->getName(),
+                'KBC.sanitizedName' => BuilderHelper::sanitizeName($tableStructure->getName()),
+                'KBC.datatype.backend' => 'snowflake',
             ];
 
-            $tableManifestOptions = new OutTableManifestOptions();
-            $tableManifestOptions
-                ->setPrimaryKeyColumns($primaryKeys)
+            $options = new ManifestManager\Options\OutTable\ManifestOptions();
+            $options
+                ->setSchema($schema)
                 ->setIncremental($this->config->isIncremental($tableStructure->getName()))
                 ->setDestination($tableStructure->getName())
-                ->setMetadata($tableMetadata)
-                ->setColumns($columnNames)
-                ->setColumnMetadata($columnsMetadata)
-            ;
+                ->setTableMetadata($tableMetadata);
+
             $this->manifestManager->writeTableManifest(
                 sprintf('%s.csv', $tableStructure->getName()),
-                $tableManifestOptions,
+                $options,
+                $this->config->getDataTypeSupport()->usingLegacyManifest(),
             );
         }
+    }
+
+    private function createManifestOptionsSchema(
+        Column $column,
+    ): ManifestOptionsSchema {
+        try {
+            $datatype = new Snowflake(
+                $column->getDataType(),
+                [
+                    'length' => $column->getLength(),
+                    'nullable' => $column->isNullable(),
+                ],
+            );
+        } catch (InvalidTypeException|InvalidLengthException) {
+            $datatype = new GenericStorage(
+                $column->getDataType(),
+                [
+                    'nullable' => $column->isNullable(),
+                ],
+            );
+        }
+
+        $columnMetadata = [];
+        foreach ($datatype->toMetadata() as $item) {
+            if ($item['value'] !== null) {
+                $columnMetadata[$item['key']] = $item['value'];
+            }
+        }
+
+        $dataTypes = [
+            'base' => array_filter([
+                'type' => $datatype->getBasetype(),
+                'length' => $datatype->getLength(),
+                'default' => $datatype->getDefault(),
+            ], fn($value) => $value !== null),
+        ];
+
+        if ($datatype instanceof Snowflake) {
+            $dataTypes['snowflake'] = array_filter([
+                'type' => $datatype->getType(),
+                'length' => $datatype->getLength(),
+                'default' => $datatype->getDefault(),
+            ], fn($value) => $value !== null);
+        }
+
+        return new ManifestOptionsSchema(
+            BuilderHelper::sanitizeName($column->getName()),
+            $dataTypes,
+            $datatype->isNullable(),
+            $column->isPrimaryKey(),
+            null,
+            $columnMetadata,
+        );
     }
 
     private function exportAndDownloadData(Table $table): int
@@ -238,8 +269,8 @@ class Extractor
         }
 
         $outputDataDir = $this->datadir . '/out/tables/' . $table->getName() . '.csv';
-        if (!is_dir($outputDataDir)) {
-            mkdir($outputDataDir, 0755, true);
+        if (!is_dir($outputDataDir) && !mkdir($outputDataDir, 0755, true) && !is_dir($outputDataDir)) {
+            throw new RuntimeException(sprintf('Directory "%s" was not created', $outputDataDir));
         }
 
         $this->logger->info('Downloading data from Snowflake');

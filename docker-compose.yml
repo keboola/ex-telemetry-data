@@ -15,6 +15,7 @@ services:
       - SNOWFLAKE_DB_WAREHOUSE
       - KBC_PROJECTID
       - KBC_STACKID
+      - KBC_DATA_TYPE_SUPPORT=none
 
   dev:
     <<: *main
