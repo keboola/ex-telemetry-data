@@ -41,18 +41,6 @@
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.type",
-                "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.nullable",
-                "value": true
-            },
-            {
-                "key": "KBC.datatype.basetype",
-                "value": "STRING"
             }
         ],
         "dst_stack_single": [
@@ -67,18 +55,6 @@
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.type",
-                "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.nullable",
-                "value": true
-            },
-            {
-                "key": "KBC.datatype.basetype",
-                "value": "STRING"
             }
         ],
         "dst_proj_company": [
@@ -93,18 +69,6 @@
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.type",
-                "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.nullable",
-                "value": true
-            },
-            {
-                "key": "KBC.datatype.basetype",
-                "value": "STRING"
             }
         ],
         "dst_stack_company": [
@@ -119,18 +83,6 @@
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.type",
-                "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.nullable",
-                "value": true
-            },
-            {
-                "key": "KBC.datatype.basetype",
-                "value": "STRING"
             }
         ],
         "dst_proj_ac": [
@@ -145,18 +97,6 @@
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.type",
-                "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.nullable",
-                "value": true
-            },
-            {
-                "key": "KBC.datatype.basetype",
-                "value": "STRING"
             }
         ],
         "dst_stack_ac": [
@@ -171,18 +111,6 @@
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.type",
-                "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.nullable",
-                "value": true
-            },
-            {
-                "key": "KBC.datatype.basetype",
-                "value": "STRING"
             }
         ],
         "dst_timestamp": [
@@ -197,18 +125,6 @@
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.type",
-                "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.nullable",
-                "value": true
-            },
-            {
-                "key": "KBC.datatype.basetype",
-                "value": "STRING"
             }
         ],
         "sample_data": [
@@ -223,18 +139,6 @@
             {
                 "key": "KBC.datatype.type",
                 "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.type",
-                "value": "TEXT"
-            },
-            {
-                "key": "KBC.datatype.nullable",
-                "value": true
-            },
-            {
-                "key": "KBC.datatype.basetype",
-                "value": "STRING"
             }
         ]
     }
