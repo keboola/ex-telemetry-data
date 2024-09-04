@@ -1,4 +1,3 @@
 parameters:
-    checkMissingIterableValueType: false
     ignoreErrors:
         - '#Cannot call method [a-zA-Z]+\(\) on Symfony\\Component\\Config\\Definition\\Builder\\NodeParentInterface\|null.#'

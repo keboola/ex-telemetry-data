@@ -6,6 +6,7 @@ namespace Keboola\TelemetryData;
 
 use Keboola\Component\Config\BaseConfig;
 use Keboola\Component\UserException;
+use Keboola\TelemetryData\ValueObject\Table;
 
 class Config extends BaseConfig
 {
@@ -84,6 +85,25 @@ class Config extends BaseConfig
     {
         $imageParameters = $this->getImageParameters();
         return $imageParameters['db']['warehouse'];
+    }
+
+    /**
+     * @return Table[]|null
+     */
+    public function getTables(): ?array
+    {
+        $imageParameters = $this->getImageParameters();
+        if (!isset($imageParameters['tables'])) {
+            return null;
+        }
+
+        return array_map(
+            fn($v) => Table::buildFromArray([
+                'schema_name' => $this->getDbSchema(),
+                'name' => $v,
+            ]),
+            $imageParameters['tables'],
+        );
     }
 
     public function isIncrementalFetching(?string $tableName = null): bool

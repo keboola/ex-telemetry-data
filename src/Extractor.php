@@ -50,7 +50,7 @@ class Extractor
         $tableNamesForManifest = [];
         $result = [];
 
-        foreach ($this->dbConnector->getTables() as $table) {
+        foreach ($this->dbConnector->getTables($this->config->getTables()) as $table) {
             $this->logger->info(sprintf('Exporting to "%s"', $table->getName()));
             $retryProxy = $this->getRetryProxy();
             try {
