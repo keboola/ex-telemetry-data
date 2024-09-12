@@ -35,3 +35,7 @@ Run the test suite using this command:
 ```
 docker-compose run --rm dev composer tests
 ```
+
+## License
+
+MIT licensed, see [LICENSE](./LICENSE) file.
