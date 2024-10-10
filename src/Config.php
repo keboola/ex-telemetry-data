@@ -38,6 +38,9 @@ class Config extends BaseConfig
 
     public function getKbcStackId(): string
     {
+        if (isset($this->getImageParameters()['stackId'])) {
+            return $this->getImageParameters()['stackId'];
+        }
         $url = getenv('KBC_STACKID');
         if (!$url) {
             throw new UserException('Cannot find "KBC_STACKID" environment.');
