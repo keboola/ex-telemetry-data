@@ -146,7 +146,23 @@ class DbConnector
         if ($result === false) {
             return null;
         }
-        assert(is_string($result));
+
+        // Log detailed information if result is not a string
+        if (!is_string($result)) {
+            $this->logger->warning(
+                'Non-string result encountered in fetchOneStringOrNull',
+                [
+                    'sql' => $sql,
+                    'result' => $result,
+                    'resultType' => gettype($result),
+                    'resultClass' => is_object($result) ? get_class($result) : null,
+                    'debugBacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5),
+                ],
+            );
+
+            $result = (string) $result;
+        }
+
         return $result;
     }
 

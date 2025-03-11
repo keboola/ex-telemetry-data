@@ -89,10 +89,39 @@ class Extractor
             SnowflakeQuote::quoteSingleIdentifier(Column::INCREMENTAL_NAME),
         );
 
-        $resultLastRow = $this->getRetryProxy()->call(
-            fn(): string|null => $this->dbConnector->fetchOneStringOrNull($sql),
+        // Log detailed information about the query and table
+        $this->logger->info(
+            'Executing query to get last row',
+            [
+                'tableSchema' => $table->getSchema(),
+                'tableName' => $table->getName(),
+                'incrementalColumn' => Column::INCREMENTAL_NAME,
+                'sql' => $sql,
+                'tableInfo' => [
+                    'columns' => $table->getColumns(),
+                ],
+            ],
         );
-        assert($resultLastRow === null || is_string($resultLastRow));
+
+        $resultLastRow = $this->getRetryProxy()->call(
+            function () use ($sql, $table): ?string {
+                try {
+                    return $this->dbConnector->fetchOneStringOrNull($sql);
+                } catch (Throwable $e) {
+                    $this->logger->critical(
+                        'Error fetching last row',
+                        [
+                            'exception' => get_class($e),
+                            'message' => $e->getMessage(),
+                            'tableSchema' => $table->getSchema(),
+                            'tableName' => $table->getName(),
+                            'sql' => $sql,
+                        ],
+                    );
+                    throw $e;
+                }
+            },
+        );
 
         return $resultLastRow;
     }
