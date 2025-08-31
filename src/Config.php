@@ -6,6 +6,7 @@ namespace Keboola\TelemetryData;
 
 use Keboola\Component\Config\BaseConfig;
 use Keboola\Component\UserException;
+use Keboola\TelemetryData\Exception\PrivateKeyIsNotValid;
 use Keboola\TelemetryData\ValueObject\Table;
 
 class Config extends BaseConfig
@@ -66,10 +67,35 @@ class Config extends BaseConfig
         return $imageParameters['db']['user'];
     }
 
-    public function getDbPassword(): string
+    public function getDbPassword(): ?string
     {
         $imageParameters = $this->getImageParameters();
-        return $imageParameters['db']['#password'];
+        return $imageParameters['db']['#password'] ?? null;
+    }
+
+    public function getPrivateKey(): ?string
+    {
+        $imageParameters = $this->getImageParameters();
+        return $imageParameters['db']['#privateKey'] ?? null;
+    }
+
+    public function getPrivateKeyPath(): ?string
+    {
+        if (is_null($this->getPrivateKey())) {
+            return null;
+        }
+        $privateKeyResource = openssl_pkey_get_private($this->getPrivateKey());
+        if (!$privateKeyResource) {
+            throw new PrivateKeyIsNotValid();
+        }
+
+        $pemPKCS8 = '';
+        openssl_pkey_export($privateKeyResource, $pemPKCS8);
+
+        $privateKeyPath = tempnam(sys_get_temp_dir(), 'snowflake_private_key_' . uniqid()) . '.p8';
+        file_put_contents($privateKeyPath, $pemPKCS8);
+
+        return $privateKeyPath;
     }
 
     public function getDbDatabase(): string

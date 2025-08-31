@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bf817aa97eb56c2d5aee6ffabd5234c6",
+    "content-hash": "91852b6fb6f97b56345fd5e8aaf9afbc",
     "packages": [
         {
             "name": "brick/math",
@@ -1686,16 +1686,16 @@
         },
         {
             "name": "keboola/table-backend-utils",
-            "version": "2.7.0",
+            "version": "3.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/keboola/php-table-backend-utils.git",
-                "reference": "de860af5cb97385d910ab71715b694749b81a0c6"
+                "reference": "1637b8dc666d7a273a5367817feee0e45836fcb1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keboola/php-table-backend-utils/zipball/de860af5cb97385d910ab71715b694749b81a0c6",
-                "reference": "de860af5cb97385d910ab71715b694749b81a0c6",
+                "url": "https://api.github.com/repos/keboola/php-table-backend-utils/zipball/1637b8dc666d7a273a5367817feee0e45836fcb1",
+                "reference": "1637b8dc666d7a273a5367817feee0e45836fcb1",
                 "shasum": ""
             },
             "require": {
@@ -1708,7 +1708,7 @@
                 "keboola/php-datatypes": "^7.6",
                 "keboola/php-utils": "^4.1",
                 "keboola/retry": "^0.5.0",
-                "php": "^8.1"
+                "php": "^8.2"
             },
             "require-dev": {
                 "keboola/coding-standard": "^15",
@@ -1736,9 +1736,9 @@
             "description": "Package allows to import files to Snowflake from multiple cloud storages",
             "support": {
                 "issues": "https://github.com/keboola/php-table-backend-utils/issues",
-                "source": "https://github.com/keboola/php-table-backend-utils/tree/2.7.0"
+                "source": "https://github.com/keboola/php-table-backend-utils/tree/3.0.0"
             },
-            "time": "2024-05-09T19:59:02+00:00"
+            "time": "2025-04-11T09:54:56+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -5910,7 +5910,8 @@
     "prefer-lowest": false,
     "platform": {
         "php": "^8",
-        "ext-json": "*"
+        "ext-json": "*",
+        "ext-openssl": "*"
     },
     "platform-dev": [],
     "plugin-api-version": "2.6.0"

@@ -21,10 +21,10 @@ class DatadirTest extends DatadirTestCase
 
     public function setUp(): void
     {
-        $this->connection = SnowflakeConnectionFactory::getConnection(
+        $this->connection = SnowflakeConnectionFactory::getConnectionWithCert(
             (string) getenv('SNOWFLAKE_DB_HOST'),
             (string) getenv('SNOWFLAKE_DB_USER'),
-            (string) getenv('SNOWFLAKE_DB_PASSWORD'),
+            (string) getenv('SNOWFLAKE_DB_PRIVATE_KEY'),
             [
                 'port' => (string) getenv('SNOWFLAKE_DB_PORT'),
                 'warehouse' => (string) getenv('SNOWFLAKE_DB_WAREHOUSE'),
