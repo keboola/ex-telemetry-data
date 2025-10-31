@@ -30,16 +30,32 @@ class DbConnector
     private function createConnection(): Connection
     {
         try {
-            $connection = SnowflakeConnectionFactory::getConnection(
-                $this->config->getDbHost(),
-                $this->config->getDbUser(),
-                $this->config->getDbPassword(),
-                [
-                    'port' => $this->config->getDbPort(),
-                    'warehouse' => $this->config->getDbWarehouse(),
-                    'database' => $this->config->getDbDatabase(),
-                ],
-            );
+            if ($this->config->getPrivateKey()) {
+                $connection = SnowflakeConnectionFactory::getConnectionWithCert(
+                    $this->config->getDbHost(),
+                    $this->config->getDbUser(),
+                    $this->config->getPrivateKey(),
+                    [
+                        'port' => $this->config->getDbPort(),
+                        'warehouse' => $this->config->getDbWarehouse(),
+                        'database' => $this->config->getDbDatabase(),
+                    ],
+                );
+            } elseif ($this->config->getDbPassword()) {
+                $connection = SnowflakeConnectionFactory::getConnection(
+                    $this->config->getDbHost(),
+                    $this->config->getDbUser(),
+                    $this->config->getDbPassword(),
+                    [
+                        'port' => $this->config->getDbPort(),
+                        'warehouse' => $this->config->getDbWarehouse(),
+                        'database' => $this->config->getDbDatabase(),
+                    ],
+                );
+            } else {
+                throw new UserException('Either "dbPassword" or "privateKeyPath" must be set.');
+            }
+
             $connection->executeStatement(
                 sprintf(
                     'USE SCHEMA %s',
@@ -162,7 +178,11 @@ class DbConnector
         $cliConfig[] = '[connections.downloader]';
         $cliConfig[] = sprintf('accountname = "%s"', $accountName);
         $cliConfig[] = sprintf('username = "%s"', $this->config->getDbUser());
-        $cliConfig[] = sprintf('password = "%s"', $this->config->getDbPassword());
+        if (!is_null($this->config->getPrivateKeyPath())) {
+            $cliConfig[] = sprintf('private_key_path = "%s"', $this->config->getPrivateKeyPath());
+        } elseif ($this->config->getDbPassword()) {
+            $cliConfig[] = sprintf('password = "%s"', $this->config->getDbPassword());
+        }
         $cliConfig[] = sprintf('dbname = "%s"', $this->config->getDbDatabase());
         $cliConfig[] = sprintf('warehousename = "%s"', $this->config->getDbWarehouse());
         $cliConfig[] = sprintf('schemaname = "%s"', $this->config->getDbSchema());
