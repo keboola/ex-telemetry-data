@@ -24,6 +24,19 @@ class Column
         'TEXT',
         'MEDIUMTEXT',
         'LONGTEXT',
+        'BOOLEAN',
+        'DATE',
+        'DATETIME',
+        'TIME',
+        'TIMESTAMP',
+        'TIMESTAMP_LTZ',
+        'TIMESTAMP_NTZ',
+        'TIMESTAMP_TZ',
+        'VARIANT',
+        'OBJECT',
+        'ARRAY',
+        'GEOGRAPHY',
+        'GEOMETRY',
     ];
 
     private bool $isPrimaryKey = false;
