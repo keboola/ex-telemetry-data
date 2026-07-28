@@ -56,7 +56,7 @@ RUN set -ex; \
     docker-php-ext-install odbc; \
     docker-php-source delete
 
-#snoflake download + verify package
+#snowflake download + verify package
 COPY docker/driver/snowflake-policy.pol /etc/debsig/policies/$SNOWFLAKE_ODBC_GPG_FINGERPRINT/generic.pol
 COPY docker/driver/simba.snowflake.ini /usr/lib/snowflake/odbc/lib/simba.snowflake.ini
 ADD https://sfc-repo.snowflakecomputing.com/odbc/linux/$SNOWFLAKE_ODBC_VERSION/snowflake-odbc-$SNOWFLAKE_ODBC_VERSION.x86_64.deb /tmp/snowflake-odbc.deb
@@ -73,12 +73,10 @@ RUN mkdir -p ~/.gnupg \
     && mkdir -p /etc/gnupg \
     && echo "allow-weak-digest-algos" >> /etc/gnupg/gpg.conf \
     && mkdir -p /usr/share/debsig/keyrings/$SNOWFLAKE_ODBC_GPG_FINGERPRINT \
-    && if ! gpg --keyserver hkp://keys.gnupg.net --recv-keys $SNOWFLAKE_ODBC_GPG_FINGERPRINT; then \
-        gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys $SNOWFLAKE_ODBC_GPG_FINGERPRINT;  \
-    fi \
-    && if ! gpg --keyserver hkp://keys.gnupg.net --recv-keys $SNOWFLAKE_SNOWSQL_GPG_KEY_ID; then \
-        gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys $SNOWFLAKE_SNOWSQL_GPG_KEY_ID;  \
-    fi \
+    && gpg --keyserver hkp://keyserver.ubuntu.com --keyserver-options timeout=30 \
+        --recv-keys $SNOWFLAKE_ODBC_GPG_FINGERPRINT \
+    && gpg --keyserver hkp://keyserver.ubuntu.com --keyserver-options timeout=30 \
+        --recv-keys $SNOWFLAKE_SNOWSQL_GPG_KEY_ID \
     && gpg --export $SNOWFLAKE_ODBC_GPG_FINGERPRINT > /usr/share/debsig/keyrings/$SNOWFLAKE_ODBC_GPG_FINGERPRINT/debsig.gpg \
     && debsig-verify /tmp/snowflake-odbc.deb \
     && gpg --verify /tmp/snowsql-linux_x86_64.bash.sig /usr/bin/snowsql-linux_x86_64.bash \
