@@ -1,8 +1,13 @@
 FROM php:8.3-cli-trixie
 
-ARG SNOWFLAKE_ODBC_VERSION=3.10.0
+ARG SNOWFLAKE_ODBC_VERSION=3.18.0
 ARG SNOWFLAKE_SNOWSQL_VERSION=1.4.0
-ARG SNOWFLAKE_GPG_KEY=2A3149C82551A34A
+# ODBC 3.18.0 is signed by a new key (id 3C98F63C9292CE02); SnowSQL 1.4.0 is still
+# signed by the previous key, hence the two separate ARGs. The ODBC one must stay the
+# full 40-char fingerprint: trixie's debsig-verify resolves the policy and keyring
+# dirs below by full issuer fingerprint, so a 16-char key id there breaks verification.
+ARG SNOWFLAKE_ODBC_GPG_FINGERPRINT=6C983AB7AFE2E5951C6C47B13C98F63C9292CE02
+ARG SNOWFLAKE_SNOWSQL_GPG_KEY_ID=2A3149C82551A34A
 ARG COMPOSER_FLAGS="--prefer-dist --no-interaction"
 ARG DEBIAN_FRONTEND=noninteractive
 ENV COMPOSER_ALLOW_SUPERUSER 1
@@ -22,6 +27,7 @@ RUN apt-get update && apt-get install -y \
         unzip \
         unixodbc \
         unixodbc-dev \
+        odbcinst \
         libpq-dev \
         debsig-verify \
         libicu-dev \
@@ -51,7 +57,7 @@ RUN set -ex; \
     docker-php-source delete
 
 #snoflake download + verify package
-COPY docker/driver/snowflake-policy.pol /etc/debsig/policies/$SNOWFLAKE_GPG_KEY/generic.pol
+COPY docker/driver/snowflake-policy.pol /etc/debsig/policies/$SNOWFLAKE_ODBC_GPG_FINGERPRINT/generic.pol
 COPY docker/driver/simba.snowflake.ini /usr/lib/snowflake/odbc/lib/simba.snowflake.ini
 ADD https://sfc-repo.snowflakecomputing.com/odbc/linux/$SNOWFLAKE_ODBC_VERSION/snowflake-odbc-$SNOWFLAKE_ODBC_VERSION.x86_64.deb /tmp/snowflake-odbc.deb
 ADD https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.4/linux_x86_64/snowsql-$SNOWFLAKE_SNOWSQL_VERSION-linux_x86_64.bash /usr/bin/snowsql-linux_x86_64.bash
@@ -66,14 +72,18 @@ RUN mkdir -p ~/.gnupg \
     && echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf \
     && mkdir -p /etc/gnupg \
     && echo "allow-weak-digest-algos" >> /etc/gnupg/gpg.conf \
-    && mkdir -p /usr/share/debsig/keyrings/$SNOWFLAKE_GPG_KEY \
-    && if ! gpg --keyserver hkp://keys.gnupg.net --recv-keys $SNOWFLAKE_GPG_KEY; then \
-        gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys $SNOWFLAKE_GPG_KEY;  \
+    && mkdir -p /usr/share/debsig/keyrings/$SNOWFLAKE_ODBC_GPG_FINGERPRINT \
+    && if ! gpg --keyserver hkp://keys.gnupg.net --recv-keys $SNOWFLAKE_ODBC_GPG_FINGERPRINT; then \
+        gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys $SNOWFLAKE_ODBC_GPG_FINGERPRINT;  \
     fi \
-    && gpg --export $SNOWFLAKE_GPG_KEY > /usr/share/debsig/keyrings/$SNOWFLAKE_GPG_KEY/debsig.gpg \
+    && if ! gpg --keyserver hkp://keys.gnupg.net --recv-keys $SNOWFLAKE_SNOWSQL_GPG_KEY_ID; then \
+        gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys $SNOWFLAKE_SNOWSQL_GPG_KEY_ID;  \
+    fi \
+    && gpg --export $SNOWFLAKE_ODBC_GPG_FINGERPRINT > /usr/share/debsig/keyrings/$SNOWFLAKE_ODBC_GPG_FINGERPRINT/debsig.gpg \
     && debsig-verify /tmp/snowflake-odbc.deb \
     && gpg --verify /tmp/snowsql-linux_x86_64.bash.sig /usr/bin/snowsql-linux_x86_64.bash \
-    && gpg --batch --delete-key --yes $SNOWFLAKE_GPG_KEY \
+    && gpg --batch --delete-key --yes $SNOWFLAKE_ODBC_GPG_FINGERPRINT \
+    && gpg --batch --delete-key --yes $SNOWFLAKE_SNOWSQL_GPG_KEY_ID \
     && dpkg -i /tmp/snowflake-odbc.deb \
     && SNOWSQL_DEST=/usr/bin SNOWSQL_LOGIN_SHELL=~/.profile bash /usr/bin/snowsql-linux_x86_64.bash \
     && rm /tmp/snowflake-odbc.deb
