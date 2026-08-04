@@ -67,12 +67,6 @@ class Config extends BaseConfig
         return $imageParameters['db']['user'];
     }
 
-    public function getDbPassword(): ?string
-    {
-        $imageParameters = $this->getImageParameters();
-        return $imageParameters['db']['#password'] ?? null;
-    }
-
     public function getPrivateKey(): ?string
     {
         $imageParameters = $this->getImageParameters();

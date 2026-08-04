@@ -13,7 +13,7 @@
       "port": 3306,
       "user": "XXX",
       "database": "XXX",
-      "#password": "xxx"
+      "#privateKey": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
     }
   }
 }

@@ -25,7 +25,6 @@ env:
   SNOWFLAKE_DB_HOST: "kebooladev.snowflakecomputing.com"
   SNOWFLAKE_DB_WAREHOUSE: "DEV"
   SNOWFLAKE_DB_USER: "telemetry_data_gh_actions"
-  SNOWFLAKE_DB_PASSWORD: ${{ secrets.SNOWFLAKE_DB_PASSWORD }}
   SNOWFLAKE_DB_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_DB_PRIVATE_KEY }}
   SNOWFLAKE_DB_PORT: "443"
   SNOWFLAKE_DB_SCHEMA: "telemetry_data_gh_actions"
@@ -100,7 +99,6 @@ jobs:
           docker run \
           -e SNOWFLAKE_DB_HOST \
           -e SNOWFLAKE_DB_USER \
-          -e SNOWFLAKE_DB_PASSWORD \
           -e SNOWFLAKE_DB_PRIVATE_KEY \
           -e SNOWFLAKE_DB_DATABASE \
           -e SNOWFLAKE_DB_PORT \

@@ -8,7 +8,6 @@ services:
     environment:
       - SNOWFLAKE_DB_HOST
       - SNOWFLAKE_DB_USER
-      - SNOWFLAKE_DB_PASSWORD
       - SNOWFLAKE_DB_PRIVATE_KEY
       - SNOWFLAKE_DB_DATABASE
       - SNOWFLAKE_DB_PORT
