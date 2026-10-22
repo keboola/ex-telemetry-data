@@ -30,31 +30,20 @@ class DbConnector
     private function createConnection(): Connection
     {
         try {
-            if ($this->config->getPrivateKey()) {
-                $connection = SnowflakeConnectionFactory::getConnectionWithCert(
-                    $this->config->getDbHost(),
-                    $this->config->getDbUser(),
-                    $this->config->getPrivateKey(),
-                    [
-                        'port' => $this->config->getDbPort(),
-                        'warehouse' => $this->config->getDbWarehouse(),
-                        'database' => $this->config->getDbDatabase(),
-                    ],
-                );
-            } elseif ($this->config->getDbPassword()) {
-                $connection = SnowflakeConnectionFactory::getConnection(
-                    $this->config->getDbHost(),
-                    $this->config->getDbUser(),
-                    $this->config->getDbPassword(),
-                    [
-                        'port' => $this->config->getDbPort(),
-                        'warehouse' => $this->config->getDbWarehouse(),
-                        'database' => $this->config->getDbDatabase(),
-                    ],
-                );
-            } else {
-                throw new UserException('Either "dbPassword" or "privateKeyPath" must be set.');
+            if (!$this->config->getPrivateKey()) {
+                throw new UserException('"privateKey" must be set.');
             }
+
+            $connection = SnowflakeConnectionFactory::getConnectionWithCert(
+                $this->config->getDbHost(),
+                $this->config->getDbUser(),
+                $this->config->getPrivateKey(),
+                [
+                    'port' => $this->config->getDbPort(),
+                    'warehouse' => $this->config->getDbWarehouse(),
+                    'database' => $this->config->getDbDatabase(),
+                ],
+            );
 
             $connection->executeStatement(
                 sprintf(
@@ -180,8 +169,6 @@ class DbConnector
         $cliConfig[] = sprintf('username = "%s"', $this->config->getDbUser());
         if (!is_null($this->config->getPrivateKeyPath())) {
             $cliConfig[] = sprintf('private_key_path = "%s"', $this->config->getPrivateKeyPath());
-        } elseif ($this->config->getDbPassword()) {
-            $cliConfig[] = sprintf('password = "%s"', $this->config->getDbPassword());
         }
         $cliConfig[] = sprintf('dbname = "%s"', $this->config->getDbDatabase());
         $cliConfig[] = sprintf('warehousename = "%s"', $this->config->getDbWarehouse());
