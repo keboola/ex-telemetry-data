@@ -180,6 +180,10 @@ class Extractor
                 'KBC.sanitizedName' => BuilderHelper::sanitizeName($tableStructure->getName()),
                 'KBC.datatype.backend' => 'snowflake',
             ];
+            $description = TableDescriptions::get($tableStructure->getName());
+            if ($description !== null) {
+                $tableMetadata['KBC.description'] = $description;
+            }
 
             $options = new ManifestManager\Options\OutTable\ManifestOptions();
             $options
